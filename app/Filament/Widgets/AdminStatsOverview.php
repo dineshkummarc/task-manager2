@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\User;
 use App\Models\Task;
+use App\Models\Project;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,48 +15,37 @@ class AdminStatsOverview extends BaseWidget
 
     protected function getColumns(): int
     {
-        return 5;
+        return 3;
     }
 
     protected function getStats(): array
     {
         $totalEmployees = User::where('role', 'employee')->orWhereNull('role')->count();
-        $tasksCompleted = Task::where('status', 'completed')->count();
-        $tasksPending = Task::whereIn('status', ['pending', 'in_progress'])->count();
-        $overdueTasks = Task::where('status', '!=', 'completed')
-            ->whereNotNull('due_date')
-            ->where('due_date', '<', now())
-            ->count();
+        
+        $bpovoId = Project::where('name', 'BPOVO')->value('id');
+        $gitmitId = Project::where('name', 'GITMIT')->value('id');
 
-        $allUsers = User::all();
-        $scores = $allUsers->map(fn($u) => $u->getPerformancePercentage());
-        $avgPerformance = $scores->count() > 0 ? $scores->avg() : 0;
+        $bpovoTasks = $bpovoId ? Task::where('project_id', $bpovoId)->count() : 0;
+        $gitmitTasks = $gitmitId ? Task::where('project_id', $gitmitId)->count() : 0;
 
         return [
             Stat::make('Total Employees', (string) $totalEmployees)
-                ->description('▲ 25% from last month')
-                ->descriptionIcon('heroicon-m-user-group')
-                ->color('primary'),
+                ->description('View Employees')
+                ->descriptionIcon('heroicon-m-arrow-top-right-on-square')
+                ->color('primary')
+                ->url('/admin/employees'),
 
-            Stat::make('Tasks Completed', (string) $tasksCompleted)
-                ->description('▲ 50% from last week')
-                ->descriptionIcon('heroicon-m-check-circle')
-                ->color('success'),
+            Stat::make('BPOVO Tasks', (string) $bpovoTasks)
+                ->description('View Tasks')
+                ->descriptionIcon('heroicon-m-briefcase')
+                ->color('success')
+                ->url('/admin/tasks?tableFilters[project_id][value]=' . $bpovoId),
 
-            Stat::make('Tasks Pending', (string) $tasksPending)
-                ->description('▲ 0% from last week')
-                ->descriptionIcon('heroicon-m-clock')
-                ->color('warning'),
-
-            Stat::make('Overdue Tasks', (string) $overdueTasks)
-                ->description('▲ 0% from last week')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color('danger'),
-
-            Stat::make('Avg. Performance', number_format($avgPerformance, 0) . '%')
-                ->description('▲ 5% from last month')
-                ->descriptionIcon('heroicon-m-star')
-                ->color('primary'),
+            Stat::make('GITMIT Tasks', (string) $gitmitTasks)
+                ->description('View Tasks')
+                ->descriptionIcon('heroicon-m-cube')
+                ->color('info')
+                ->url('/admin/tasks?tableFilters[project_id][value]=' . $gitmitId),
         ];
     }
 }

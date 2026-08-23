@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Task;
+use App\Models\UserActivity;
 
 class EmployeeDashboardController extends Controller
 {
@@ -42,25 +43,12 @@ class EmployeeDashboardController extends Controller
                   ->orWhere('user_id', $user->id);
             })->where('status', 'pending')->count();
 
-        // My Tasks (Paginated & Filtered)
-        $statusFilter = request()->query('status');
-        
+        // My Tasks: status filtering is handled instantly in the dashboard UI.
         $tasksQuery = Task::where(function($q) use ($user) {
                 $q->where('assigned_to', $user->id)
                   ->orWhere('user_id', $user->id);
-            });
-            
-        if ($statusFilter && in_array($statusFilter, ['pending', 'in_progress', 'blockage', 'completed'])) {
-            if ($statusFilter === 'blockage') {
-                $tasksQuery->where('is_blocked', true);
-            } elseif ($statusFilter === 'pending') {
-                $tasksQuery->where('status', 'pending')->where('is_blocked', false);
-            } elseif ($statusFilter === 'in_progress') {
-                $tasksQuery->where('status', 'in_progress')->where('is_blocked', false);
-            } else {
-                $tasksQuery->where('status', $statusFilter);
-            }
-        }
+            })
+            ->with('creator');
             
         $tasks = $tasksQuery->orderByRaw("CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, due_date ASC")
             ->paginate(6)
@@ -128,6 +116,16 @@ class EmployeeDashboardController extends Controller
             ->paginate(15);
             
         return view('employee.history', compact('user', 'tasks'));
+    }
+
+    public function activities()
+    {
+        $user = Auth::user();
+        $activities = UserActivity::where('user_id', $user->id)
+            ->latest()
+            ->paginate(20);
+
+        return view('employee.activities', compact('user', 'activities'));
     }
 
     public function profile()

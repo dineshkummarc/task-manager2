@@ -243,13 +243,16 @@ class UserTaskHistory extends Page
 
         $writer = new Writer();
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['User Name', 'Task Name', 'Details', 'Completed At']));
+        $writer->addRow(Row::fromValues(['User Name', 'Task Name', 'Details', 'Assigned At', 'Completed At']));
 
         foreach ($tasks as $task) {
             $writer->addRow(Row::fromValues([
                 $task->assignee?->name ?? '—',
                 $task->title,
                 trim(strip_tags((string) $task->description)),
+                $task->created_at
+                    ?->timezone('Asia/Karachi')
+                    ->format('M d, Y h:i A'),
                 $task->updated_at
                     ?->timezone('Asia/Karachi')
                     ->format('M d, Y h:i A'),

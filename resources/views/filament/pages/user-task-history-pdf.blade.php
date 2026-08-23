@@ -2,128 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Employee Reports{{ $user ? ' — ' . $user->name : '' }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $user?->name ?? 'All Users' }} — Employee Reports</title>
     <style>
-        body { font-family: DejaVu Sans, Arial, sans-serif; color: #1f2937; margin: 24px; background: #fff; }
-        h1 { font-size: 20px; margin: 0 0 4px; color: #111827; }
-        .meta { color: #6b7280; margin-bottom: 24px; font-size: 12px; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; background: #fff; color: #0f172a; font-family: Arial, sans-serif; }
         
-        /* User Section Card */
-        .user-card {
-            border: 1px solid #d1fae5;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            overflow: hidden;
-            background: #fff;
-        }
-        .user-header {
-            background: #ecfdf5; /* Light green background for user name */
-            padding: 12px 16px;
-            border-bottom: 1px solid #a7f3d0;
-            font-size: 14px;
-            font-weight: bold;
-            color: #065f46; /* Darker green text for the user name */
-            display: flex;
-            justify-content: space-between;
-        }
-        .user-meta-count {
-            font-size: 11px;
-            font-weight: normal;
-            color: #047857;
-        }
-
-        /* Task Table Inside Card */
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { padding: 10px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid #f3f4f6; }
-        th { background: #f9fafb; color: #374151; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
-        tr:last-child td { border-bottom: none; }
+        .print { margin-bottom: 22px; padding: 8px 14px; border: 0; border-radius: 6px; background: #0f766e; color: #fff; font-weight: 700; cursor: pointer; }
         
-        .badge { 
-            background: #d1fae5;
-            color: #065f46;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 999px;
-            display: inline-block;
-        }
-        .date-text { color: #9ca3af; font-size: 11px; margin-top: 2px; }
-        .task-title { font-weight: 600; color: #1f2937; }
-        .task-desc { color: #6b7280; font-size: 11px; margin-top: 2px; }
+        .report-header { text-align: center; margin: 0 0 20px; }
+        .report-name { margin: 0; font-size: 24px; font-weight: 700; }
+        .report-email { margin: 5px 0 3px; color: #64748b; font-size: 13px; }
+        .report-period { margin: 0; color: #94a3b8; font-size: 12px; }
 
-        .no-data { text-align: center; padding: 32px; color: #9ca3af; font-size: 13px; border: 1px solid #e5e7eb; border-radius: 12px; }
+        /* Report Table Styling matching the Filament View */
+        .th-report-table { width: 100%; border-collapse: collapse; border: 1px solid #E5E7EB; border-radius: 10px; overflow: hidden; }
+        .th-report-table th { padding: 12px 16px; background: #F8FAFC; border-bottom: 1px solid #E5E7EB; color: #64748B; font-size: 11.5px; font-weight: 700; text-align: left; text-transform: uppercase; }
+        .th-report-table td { padding: 12px 16px; border-bottom: 1px solid #EEF2F7; color: #334155; font-size: 13px; vertical-align: middle; }
+        
+        /* Grouping & Borders */
+        .th-report-table tr.th-user-last-row td { border-bottom: 3px solid #94A3B8 !important; }
+        .th-report-table tr:last-child td { border-bottom: none; }
+        .th-report-table tr:nth-child(odd) td { background: #FCFDFE; }
+        
+        .th-report-employee { width: 140px; border-bottom: 3px solid #94A3B8 !important; border-right: 1px solid #E5E7EB; background: #F5F8FF !important; color: #334155 !important; font-size: 14px; font-weight: 700; text-align: center; vertical-align: middle !important; }
+        .th-report-work { min-width: 140px; color: #0F172A !important; font-size: 13.5px; font-weight: 600; }
+        .th-report-estimate { width: 120px; white-space: nowrap; font-size: 12.5px; color: #475569; }
+        .th-report-description { color: #64748B !important; font-size: 12.5px; max-width: 200px; word-break: break-word; }
+        .th-report-completed { width: 120px; color: #15803D !important; font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+        .empty { padding: 35px; text-align: center; color: #94a3b8; font-size: 13px; border: 1px solid #e2e8f0; border-radius: 10px; }
 
         @media print {
-            .no-print { display: none; }
-            body { margin: 0; }
-            .user-card { break-inside: avoid; }
+            body { padding: 0; }
+            .print { display: none; }
+            @page { margin: 12mm; }
         }
     </style>
 </head>
 <body>
-    <p class="no-print" style="margin-bottom: 20px;">
-        <button onclick="window.print()" style="padding: 8px 16px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print / Save as PDF</button>
-    </p>
+    <button class="print" onclick="window.print()">Print / Save as PDF</button>
+    
+    <div class="report-header">
+        <h1 class="report-name">{{ $user?->name ?? 'All Users' }}</h1>
+        <p class="report-email">{{ $user?->email ?? 'Employee task report summary' }}</p>
+        <p class="report-period">{{ $periodLabel ?? 'Report Period' }} &bull; {{ $tasks->count() }} completed tasks</p>
+    </div>
 
-    <h1>{{ $user ? $user->name . ' — ' : '' }}Employee Reports</h1>
-    <p class="meta">
-        @if ($user)
-            {{ $user->email }} &bull;
-        @else
-            All users &bull;
-        @endif
-        Period: {{ $periodLabel }} &bull;
-        Total Tasks: {{ $tasks->count() }}
-    </p>
+    @if($tasks->count() > 0)
+        @php
+            // Group tasks by employee ID if multiple users are present, or group under a single collection
+            $sortedTasks = $tasks->sortBy('updated_at');
+            $tasksByEmployee = $sortedTasks->groupBy(fn ($task) => $task->user_id ?? $task->assignee_id ?? 'general');
+        @endphp
 
-    @php
-        $groupedTasks = $tasks->groupBy(function($task) {
-            return $task->assignee?->name ?? 'Unassigned';
-        });
-    @endphp
-
-    @forelse ($groupedTasks as $userName => $userTasks)
-        <div class="user-card">
-            <div class="user-header">
-                <span>{{ $userName }}</span>
-                <span class="user-meta-count">{{ $userTasks->count() }} {{ $userTasks->count() === 1 ? 'Task' : 'Tasks' }}</span>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 35%;">Task Name</th>
-                        <th style="width: 40%;">Details</th>
-                        <th style="width: 25%;">Status / Completed At</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <table class="th-report-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Work</th>
+                    <th>Assigned Time</th>
+                    <th>Estimated Time</th>
+                    <th>Description</th>
+                    <th>Completed Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($tasksByEmployee as $userTasks)
                     @foreach ($userTasks as $task)
-                        <tr>
-                            <td>
-                                <div class="task-title">{{ $task->title }}</div>
-                            </td>
-                            <td>
-                                <div class="task-desc">{{ trim(strip_tags((string) $task->description)) ?: '—' }}</div>
-                            </td>
-                            <td>
-                                <span class="badge">Completed</span>
-                                <div class="date-text">{{ $task->updated_at?->timezone('Asia/Karachi')->format('M d, Y h:i A') }}</div>
-                            </td>
+                        @php 
+                            $isLastRowForUser = $loop->last;
+                            // Retrieve the user/assignee model dynamically
+                            $employeeName = $task->user?->name ?? $task->assignee?->name ?? $user?->name ?? 'Team Member';
+                        @endphp
+                        <tr class="{{ $isLastRowForUser ? 'th-user-last-row' : '' }}">
+                            @if ($loop->first)
+                                <td class="th-report-employee" rowspan="{{ $userTasks->count() }}">{{ $employeeName }}</td>
+                            @endif
+                            <td class="th-report-work">{{ $task->title }}</td>
+                            <td class="th-report-completed">{{ $task->created_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
+                            <td class="th-report-estimate">{{ $task->estimated_minutes ? $task->estimated_minutes . ' min' : '—' }}</td>
+                            <td class="th-report-description">{{ trim(strip_tags((string) $task->description)) ?: '—' }}</td>
+                            <td class="th-report-completed">{{ $task->updated_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
                         </tr>
                     @endforeach
-                </tbody>
-            </table>
-        </div>
-    @empty
-        <div class="no-data">
-            No completed tasks for this period.
-        </div>
-    @endforelse
-
-    <script>
-        window.addEventListener('load', function () {
-            window.print();
-        });
-    </script>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <div class="empty">No completed tasks for the selected filters.</div>
+    @endif
 </body>
 </html>

@@ -1,9 +1,11 @@
 <?php
 namespace App\Models;
 
+use App\Mail\TaskAssignedMail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Mail;
 
 class Task extends Model
 {
@@ -12,6 +14,21 @@ class Task extends Model
     protected $casts = [
         'due_date' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (self $task): void {
+            $creator = $task->creator;
+            $assignee = $task->assignee;
+
+            // Send only once: when an administrator assigns a task to an employee.
+            if (! $creator?->isAdmin() || ! $assignee?->isEmployee() || blank($assignee->email)) {
+                return;
+            }
+
+            Mail::to($assignee)->send(new TaskAssignedMail($task));
+        });
+    }
 
     public function getEstimatedTimeAttribute(): string
     {
@@ -24,6 +41,16 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     // Assigning Manager

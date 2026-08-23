@@ -17,8 +17,8 @@
 
     <div class="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
         <div class="text-center mb-8">
-            <div class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mx-auto mb-4">
-                <i class="ph-fill ph-rocket-launch text-2xl"></i>
+            <div class="flex items-center justify-center mx-auto mb-4">
+                <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-30 w-auto -mb-10 object-contain">
             </div>
             <h1 class="text-2xl font-bold text-slate-800">Welcome Back!</h1>
             <p class="text-sm text-slate-500 mt-2">Please login to your employee account.</p>

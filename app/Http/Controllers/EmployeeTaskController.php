@@ -27,6 +27,9 @@ class EmployeeTaskController extends Controller
             'user_id' => $user->id,
             'assigned_to' => $user->id,
             'assigned_by' => $user->id,
+            'project_id' => $user->project_id,
+            'department_id' => $user->department_id,
+            'job_responsibility' => $user->job_responsibility,
             'status' => 'pending',
             'due_date' => null,
         ]);

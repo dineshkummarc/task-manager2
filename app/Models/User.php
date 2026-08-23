@@ -57,6 +57,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsTo(Department::class);
     }
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function assignedTasks(): HasMany
     {
         return $this->hasMany(Task::class, 'assigned_to');
@@ -85,6 +90,10 @@ class User extends Authenticatable implements FilamentUser
     public function activities(): HasMany
     {
         return $this->hasMany(UserActivity::class);
+    }
+    public function jobResponsibility()
+    {
+        return $this->belongsTo(JobResponsibility::class);
     }
 
     /**

@@ -25,6 +25,9 @@ class TeamScheduleMatrixWidget extends Widget
 
     public ?int $selectedUserId = null;
 
+    /** @var 'all'|'pending'|'in_progress'|'unresolved'|'completed' */
+    public string $selectedStatus = 'completed';
+
     public bool $showHistoryModal = false;
 
     public ?int $historyUserId = null;
@@ -59,6 +62,28 @@ class TeamScheduleMatrixWidget extends Widget
     public function setSelectedUser($userId = null): void
     {
         $this->selectedUserId = filled($userId) ? (int) $userId : null;
+    }
+
+    public function setSelectedStatus(string $status = 'all'): void
+    {
+        $this->selectedStatus = in_array($status, ['all', 'pending', 'in_progress', 'unresolved', 'completed'], true)
+            ? $status
+            : 'all';
+    }
+
+    public function viewUserReport(int $userId)
+    {
+        if (! \App\Filament\Pages\UserTaskHistory::canAccess()) {
+            return null;
+        }
+
+        $period = match ($this->viewMode) {
+            'weekly' => 'weekly',
+            'monthly' => 'monthly',
+            default => 'today',
+        };
+
+        return redirect(\App\Filament\Pages\UserTaskHistory::getUrl().'?user='.$userId.'&period='.$period);
     }
 
     public function openTaskHistory(int $userId): void
@@ -123,10 +148,41 @@ class TeamScheduleMatrixWidget extends Widget
 
         $columns = $useStatusColumns ? $statuses : $employees;
 
+        $rows = $this->buildRows($employees, $columns, $anchor, $range);
+
+        $filterItems = function ($items) {
+            return collect($items)
+                ->unique('id')
+                ->filter(function (array $item): bool {
+                if ($item['is_break']) {
+                    return false;
+                }
+
+                $status = $item['status'] === 'blockage' ? 'unresolved' : $item['status'];
+
+                    return $this->selectedStatus === 'all' || $status === $this->selectedStatus;
+                })
+                ->values()
+                ->all();
+        };
+
+        $scheduleRows = collect($rows)
+            ->map(fn (array $row) => [
+                'label' => $row['label'],
+                'items' => $filterItems(collect($row['cells'])->flatten(1)),
+            ])
+            ->all();
+
+        $scheduleItems = collect($scheduleRows)
+            ->flatMap(fn (array $row) => $row['items'])
+            ->sortBy(fn (array $item) => $item['time'])
+            ->values();
+
         return [
             'employees' => $employees,
             'columns' => $columns,
-            'rows' => $this->buildRows($employees, $columns, $anchor, $range),
+            'scheduleRows' => $scheduleRows,
+            'scheduleItems' => $scheduleItems,
             'maxDate' => now()->toDateString(),
             'cornerLabel' => match ($this->viewMode) {
                 'weekly' => 'Day',
@@ -231,8 +287,8 @@ class TeamScheduleMatrixWidget extends Widget
         $rows = [];
 
         if ($this->viewMode === 'daily') {
-            $cursor = $anchor->copy()->setTime(10, 0);
-            $end = $anchor->copy()->setTime(19, 0);
+            $cursor = $anchor->copy()->startOfDay();
+            $end = $anchor->copy()->endOfDay();
 
             while ($cursor->lt($end)) {
                 $rows[] = $this->makeRow($cursor->format('H:i'), $cursor->format('g:i A'), $columns, $placements);
@@ -378,12 +434,6 @@ class TeamScheduleMatrixWidget extends Widget
 
         $hour = (int) $when->format('G');
 
-        if ($hour < 10) {
-            $hour = 10;
-        } elseif ($hour >= 19) {
-            $hour = 18;
-        }
-
         return sprintf('%02d:00', $hour);
     }
 
@@ -459,6 +509,7 @@ class TeamScheduleMatrixWidget extends Widget
             'time' => $when->format('g:i A'),
             'is_break' => $isBreak,
             'userId' => $userId,
+            'userName' => $task->assignee?->name ?? 'Unassigned',
             'tone' => $this->toneFor($task, $isBreak),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use App\Models\Project;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -19,6 +20,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = null;
+    protected static ?string $navigationLabel = 'Employees';
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
@@ -42,32 +44,70 @@ class UserResource extends Resource
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->maxLength(255),
 
-                     Forms\Components\Select::make('roles')
+                        Forms\Components\Select::make('project_id')
+                            ->label('Project')
+                            ->options(Project::query()->orderByRaw("name = 'BPOVO' DESC")->orderBy('name')->pluck('name', 'id'))
+                            ->default(fn () => Project::where('name', 'BPOVO')->value('id'))
+                            ->reactive()
+                            ->afterStateUpdated(function (callable $set) {
+                                $set('department_id', null);
+                                $set('job_responsibility', null);
+                            })
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+
+                        Forms\Components\Select::make('department_id')
+                            ->label('Department')
+                            ->options(function (callable $get) {
+                                $projectId = $get('project_id');
+
+                                return $projectId
+                                    ? \App\Models\Department::where('project_id', $projectId)->orderBy('name')->pluck('name', 'id')
+                                    : [];
+                            })
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $set) => $set('job_responsibility', null))
+                            ->required(),
+
+                        Forms\Components\Select::make('job_responsibility')
+                            ->label('Role & Responsibility')
+                            ->options(function (callable $get) {
+                                $departmentId = $get('department_id');
+                                if (! $departmentId) {
+                                    return [];
+                                }
+                                
+                                $department = \App\Models\Department::find($departmentId);
+                                if (! $department || empty($department->responsibilities)) {
+                                    return [];
+                                }
+
+                                return array_combine($department->responsibilities, $department->responsibilities);
+                            })
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+
+                        Forms\Components\Select::make('roles')
                             ->relationship('roles', 'name')
                             ->dehydrated(false)
                             ->saveRelationshipsUsing(function (User $record, $state) {
                                 $roleIds = is_array($state) ? $state : [$state];
-                                
-                                // Eloquent relationship ke zariye roles sync karein
                                 $record->roles()->sync($roleIds);
 
-                                // Agar purana 'role' column bhi update karna hai
-                                if (!empty($roleIds)) {
+                                if (! empty($roleIds)) {
                                     $role = \Spatie\Permission\Models\Role::find($roleIds[0]);
                                     if ($role) {
                                         $record->updateQuietly(['role' => $role->name]);
                                     }
                                 }
                             })
-                            ->label('Role')
+                            ->label('Account Type')
+                            ->default(fn () => \Spatie\Permission\Models\Role::where('name', 'employee')->value('id'))
                             ->preload()
                             ->searchable()
                             ->required(),
-
-                        Forms\Components\Select::make('department_id')
-                            ->relationship('department', 'name')
-                            ->label('Department')
-                            ->nullable(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Direct Custom Permissions (Optional)')
@@ -79,13 +119,10 @@ class UserResource extends Resource
                                 /** @var User $authUser */
                                 $authUser = Auth::user();
 
-                                // Super admin (admin role) sees ALL permissions
                                 if ($authUser->hasRole('admin')) {
                                     return Permission::all()->pluck('name', 'id');
                                 }
 
-                                // Any other role (e.g. manager) can only grant
-                                // permissions they already have themselves
                                 return $authUser->getAllPermissions()->pluck('name', 'id');
                             })
                             ->columns(3)
@@ -127,6 +164,10 @@ class UserResource extends Resource
                     ->label('Department')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('project.name')
+                    ->label('Project')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('performance')
                     ->label('Performance')
                     ->state(function (User $record): string {
@@ -146,6 +187,9 @@ class UserResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('project_id')
+                    ->label('Project')
+                    ->options(Project::query()->orderByRaw("name = 'BPOVO' DESC")->orderBy('name')->pluck('name', 'id')),
                 Tables\Filters\SelectFilter::make('roles')
                     ->relationship('roles', 'name')
                     ->label('Filter by Role'),

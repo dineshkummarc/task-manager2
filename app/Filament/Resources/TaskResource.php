@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TaskResource\Pages;
 use App\Filament\Resources\TaskResource\RelationManagers;
 use App\Models\Task;
+use App\Models\Project;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,6 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Filters\SelectFilter;
 
 class TaskResource extends Resource
 {
@@ -33,14 +35,87 @@ class TaskResource extends Resource
                     ->rows(5)
                     ->columnSpanFull(),
 
-                // Task sirf Employee ko assign hoga
+                Forms\Components\TextInput::make('estimated_minutes')
+                    ->label('Estimated Time (Minutes)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->default(0)
+                    ->helperText('Enter the estimated duration in minutes.'),
+
+                // 1. Project Select
+                Forms\Components\Select::make('project_id')
+                    ->label('Project')
+                    ->options(Project::query()->orderByRaw("name = 'BPOVO' DESC")->orderBy('name')->pluck('name', 'id'))
+                    ->default(fn () => Project::where('name', 'BPOVO')->value('id'))
+                    ->reactive()
+                    ->afterStateUpdated(function (callable $set) {
+                        $set('department_id', null);
+                        $set('job_responsibility', null);
+                        $set('assigned_to', null);
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                // 2. Department Select
+                Forms\Components\Select::make('department_id')
+                    ->label('Department')
+                    ->options(function (callable $get) {
+                        $projectId = $get('project_id');
+
+                        return $projectId
+                            ? \App\Models\Department::where('project_id', $projectId)->orderBy('name')->pluck('name', 'id')
+                            : [];
+                    })
+                    ->reactive()
+                    ->afterStateUpdated(function (callable $set) {
+                        $set('job_responsibility', null);
+                        $set('assigned_to', null);
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                // 3. Role & Responsibility Select
+                Forms\Components\Select::make('job_responsibility')
+                    ->label('Role & Responsibility')
+                    ->options(function (callable $get) {
+                        $departmentId = $get('department_id');
+                        if (! $departmentId) {
+                            return [];
+                        }
+                        
+                        $department = \App\Models\Department::find($departmentId);
+                        if (! $department || empty($department->responsibilities)) {
+                            return [];
+                        }
+
+                        return array_combine($department->responsibilities, $department->responsibilities);
+                    })
+                    ->reactive()
+                    ->afterStateUpdated(fn (callable $set) => $set('assigned_to', null))
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                // 4. Assign To (Employee Select)
                 Forms\Components\Select::make('assigned_to')
-                    ->relationship(
-                        name: 'assignee', 
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query) => $query->where('role', 'employee')
-                    )
                     ->label('Assign To (Employee)')
+                    ->options(function (callable $get) {
+                        $departmentId = $get('department_id');
+                        $projectId = $get('project_id');
+                        $responsibility = $get('job_responsibility');
+
+                        if (! $projectId || ! $departmentId || ! $responsibility) {
+                            return [];
+                        }
+
+                        return \App\Models\User::where('project_id', $projectId)
+                            ->where('department_id', $departmentId)
+                            ->where('job_responsibility', $responsibility)
+                            ->where('role', 'employee')
+                            ->pluck('name', 'id');
+                    })
                     ->required()
                     ->searchable()
                     ->preload(),
@@ -53,14 +128,6 @@ class TaskResource extends Resource
                     ])
                     ->default('pending')
                     ->required(),
-
-                Forms\Components\DateTimePicker::make('due_date')
-                    ->label('Expected Completion Date & Time')
-                    ->seconds(false)
-                    ->native(false)
-                    ->required()
-                    ->helperText('Set the deadline by which this task is expected to be completed. The task start time is recorded automatically when it is created.'),
-
             ]);
     }
     
@@ -91,6 +158,7 @@ class TaskResource extends Resource
                     ),
                 Tables\Columns\TextColumn::make('assignee.name')->label('Assigned To'),
                 Tables\Columns\TextColumn::make('creator.name')->label('Assigned By'),
+                Tables\Columns\TextColumn::make('project.name')->label('Project'),
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'danger' => 'pending',
@@ -106,12 +174,18 @@ class TaskResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Started At')
                     ->dateTime(),
-                Tables\Columns\TextColumn::make('due_date')
-                    ->label('Expected By')
-                    ->dateTime(),
             ])
             ->filters([
-                // Filters agar lagane hon
+                SelectFilter::make('project_id')
+                    ->label('Project')
+                    ->options(Project::query()->orderByRaw("name = 'BPOVO' DESC")->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('department_id')
+                    ->label('Department')
+                    ->options(\App\Models\Department::orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -135,8 +209,9 @@ class TaskResource extends Resource
         $query = parent::getEloquentQuery();
         
         $user = Auth::user();
-        if ($user && $user->hasRole('employee')) {
-            $query->where('assigned_to', $user->id);
+        $userObj = is_object($user) ? $user : null;
+        if ($userObj && method_exists($userObj, 'hasRole') && $userObj->hasRole('employee')) {
+            $query->where('assigned_to', $userObj->id);
         }
         
         return $query;

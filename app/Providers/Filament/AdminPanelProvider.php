@@ -25,17 +25,19 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
-            ->login()
-            ->darkMode(false)
-            ->userMenuItems([
-                'logout' => MenuItem::make()
-                    ->label('Logout')
-                    ->icon('heroicon-m-arrow-left-on-rectangle')
-                    ->color('danger'),
-            ])
+    ->default()
+    ->id('admin')
+    ->path('admin')
+    ->brandLogo(asset('images/bpovo_logo.png')) // Yeh line yahan add kar dein
+    ->brandLogoHeight('7.5rem')                 // Logo ki height adjust karne ke liye
+    ->login()
+    ->darkMode(false)
+    ->userMenuItems([
+        'logout' => MenuItem::make()
+            ->label('Logout')
+            ->icon('heroicon-m-arrow-left-on-rectangle')
+            ->color('danger'),
+    ])
             ->colors([
                 'primary' => Color::Indigo,
                 'gray' => Color::Slate,

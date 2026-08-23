@@ -1,21 +1,37 @@
 @extends('layouts.employee')
 
 @section('content')
+@php
+    $notificationTasks = $user->assignedTasks()->with('creator')->latest()->take(5)->get();
+@endphp
 <!-- Scrollable Main Content -->
 <div class="flex-1 overflow-y-auto bg-[#FAFAFB] p-6 lg:p-8">
     
     <!-- Top Bar (Desktop) -->
-    <div class="hidden md:flex justify-between items-center mb-8">
-        <div class="relative w-96">
-            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-            <input type="text" placeholder="Search tasks, projects..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all-fast placeholder:text-slate-400 shadow-sm">
-        </div>
-        
+    <div class="hidden md:flex justify-end items-center mb-8">
         <div class="flex items-center gap-4">
-            <button class="relative p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+            <div class="relative">
+                <button type="button" data-notification-toggle class="relative p-2 text-slate-400 hover:text-indigo-600 transition-colors" aria-label="Recent tasks">
                 <i class="ph ph-bell text-2xl"></i>
-                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-[#FAFAFB]"></span>
-            </button>
+                @if ($notificationTasks->isNotEmpty())
+                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-[#FAFAFB]"></span>
+                @endif
+                </button>
+                <div data-notification-panel class="hidden absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-slate-100 font-bold text-slate-800">Recent Tasks</div>
+                    <div class="max-h-72 overflow-y-auto">
+                        @forelse ($notificationTasks as $task)
+                            <a href="{{ route('employee.tasks.index') }}" class="block px-4 py-3 border-b border-slate-50 hover:bg-slate-50">
+                                <p class="text-sm font-semibold text-slate-800 truncate">{{ $task->title }}</p>
+                                <p class="text-xs text-slate-500 mt-1">{{ $task->creator?->name ?? 'Self' }} · {{ $task->created_at->diffForHumans() }}</p>
+                            </a>
+                        @empty
+                            <p class="px-4 py-5 text-sm text-slate-500">No recent tasks.</p>
+                        @endforelse
+                    </div>
+                    <a href="{{ route('employee.tasks.index') }}" class="block px-4 py-3 text-center text-sm font-semibold text-indigo-600 hover:bg-indigo-50">View all tasks</a>
+                </div>
+            </div>
             <div class="relative group">
                 <div class="flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer">
                     <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=6366f1&color=fff' }}" alt="Profile" class="w-10 h-10 rounded-full shadow-sm object-cover">
@@ -161,17 +177,17 @@
 
     <!-- My Tasks List -->
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-8">
-        <div class="p-5 md:p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-3 md:p-6 border-b border-slate-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-slate-800">My Tasks</h3>
-            <form action="{{ route('employee.dashboard') }}" method="GET" class="inline-flex">
-                <select name="status" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 transition-colors focus:outline-none">
+            <div class="inline-flex">
+                <select id="task-status-filter" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 transition-colors focus:outline-none">
                     <option value="">All Status</option>
-                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                    <option value="blockage" {{ request('status') === 'blockage' ? 'selected' : '' }}>Blockage</option>
-                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="blockage">Unresolved</option>
+                    <option value="completed">Completed</option>
                 </select>
-            </form>
+            </div>
         </div>
         
         <div class="overflow-x-auto">
@@ -180,17 +196,25 @@
                     <tr class="bg-slate-50/50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                         <th class="py-4 px-6 font-semibold">#</th>
                         <th class="py-4 px-6 font-semibold">Task Title</th>
+                        <th class="py-4 px-6 font-semibold">Assigned By</th>
+                        <th class="py-4 px-6 font-semibold">Assigned At</th>
                         <th class="py-4 px-6 font-semibold text-center">Status</th>
                         <th class="py-4 px-6 font-semibold text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm">
                     @forelse($tasks as $index => $task)
-                    <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
+                    <tr data-task-row data-task-status="{{ $task->is_blocked ? 'blockage' : $task->status }}" class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                         <td class="py-4 px-6 text-slate-400 font-medium">{{ $tasks->firstItem() + $index }}</td>
                         <td class="py-4 px-6">
                             <p class="font-bold text-slate-800 mb-0.5">{{ $task->title }}</p>
                             <p class="text-xs text-slate-500 truncate max-w-xs">{!! strip_tags($task->description) !!}</p>
+                        </td>
+                        <td class="py-4 px-6 text-sm font-medium text-slate-700 whitespace-nowrap">
+                            {{ $task->assigned_by === $user->id ? 'Self' : ($task->creator?->name ?? '—') }}
+                        </td>
+                        <td class="py-4 px-6 text-xs text-slate-500 whitespace-nowrap">
+                            {{ $task->created_at?->timezone('Asia/Karachi')->format('M d, Y h:i A') ?? '—' }}
                         </td>
                         <td class="py-4 px-6 text-center">
                             @php
@@ -206,45 +230,24 @@
                                 };
                                 if ($task->is_blocked) {
                                     $statusClass = 'bg-red-50 text-red-600 border border-red-200';
-                                    $statusLabel = 'Blockage';
+                                    $statusLabel = 'Unresolved';
                                 }
                             @endphp
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
                                 {{ $statusLabel }}
                             </span>
                         </td>
-                        <td class="py-4 px-6 text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <form action="{{ route('employee.tasks.status', $task) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="status" value="pending">
-                                    <button type="submit" class="px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold {{ $task->status === 'pending' && !$task->is_blocked ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-300' }} transition-colors">
-                                        <i class="ph-fill ph-clock"></i> Pending
-                                    </button>
-                                </form>
-                                <form action="{{ route('employee.tasks.status', $task) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="status" value="in_progress">
-                                    <button type="submit" class="px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold {{ $task->status === 'in_progress' && !$task->is_blocked ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300' }} transition-colors">
-                                        <i class="ph-fill ph-play-circle"></i> In Progress
-                                    </button>
-                                </form>
-                                <form action="{{ route('employee.tasks.status', $task) }}" method="POST" onsubmit="if(!this.block_reason.value){ let reason = prompt('Enter reason for blockage:'); if(reason) { this.block_reason.value = reason; return true; } return false; } return true;">
-                                    @csrf
-                                    <input type="hidden" name="status" value="blockage">
-                                    <input type="hidden" name="block_reason" value="">
-                                    <button type="submit" class="px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold {{ $task->is_blocked ? 'bg-red-100 border-red-300 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-300' }} transition-colors">
-                                        <i class="ph-fill ph-warning-octagon"></i> Blockage
-                                    </button>
-                                </form>
-                                <form action="{{ route('employee.tasks.status', $task) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="status" value="completed">
-                                    <button type="submit" class="px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 border text-xs font-semibold {{ $task->status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-300' }} transition-colors">
-                                        <i class="ph-fill ph-check-circle"></i> Completed
-                                    </button>
-                                </form>
-                            </div>
+                        <td class="py-4 -px-5 text-right">
+                            <form action="{{ route('employee.tasks.status', $task) }}" method="POST" class="inline-block w-full sm:w-44">
+                                @csrf
+                                <input type="hidden" name="block_reason" value="">
+                                <select name="status" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" onchange="if (this.value === 'blockage') { const reason = prompt('Enter reason for unresolved task:'); if (!reason) { this.value = '{{ $task->is_blocked ? 'blockage' : $task->status }}'; return; } this.form.querySelector('[name=block_reason]').value = reason; } this.form.submit();">
+                                    <option value="pending" @selected($task->status === 'pending' && ! $task->is_blocked)>Pending</option>
+                                    <option value="in_progress" @selected($task->status === 'in_progress' && ! $task->is_blocked)>In Progress</option>
+                                    <option value="blockage" @selected($task->is_blocked)>Unresolved</option>
+                                    <option value="completed" @selected($task->status === 'completed')>Completed</option>
+                                </select>
+                            </form>
                         </td>
                     </tr>
                     @empty
@@ -254,6 +257,11 @@
                         </td>
                     </tr>
                     @endforelse
+                    <tr id="task-filter-empty" class="hidden">
+                        <td colspan="6" class="py-8 text-center text-slate-500">
+                            No tasks match this status.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -264,7 +272,7 @@
         </div>
         @else
         <div class="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-            <span>Showing {{ $tasks->count() }} of {{ $tasks->total() }} tasks</span>
+            <span id="task-count">Showing {{ $tasks->count() }} of {{ $tasks->total() }} tasks</span>
             <div class="flex gap-1">
                 <button class="w-8 h-8 rounded border border-slate-200 flex items-center justify-center opacity-50 cursor-not-allowed"><i class="ph ph-caret-left"></i></button>
                 <button class="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center font-medium">1</button>
@@ -281,7 +289,7 @@
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
             <div class="p-5 md:p-6 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">Recent Activity</h3>
-                <a href="#" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View All</a>
+                <a href="{{ route('employee.activities') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View All</a>
             </div>
             <div class="p-5 md:p-6 space-y-6">
                 @forelse($recentActivity as $activity)
@@ -364,5 +372,30 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const filter = document.getElementById('task-status-filter');
+        const rows = [...document.querySelectorAll('[data-task-row]')];
+        const emptyState = document.getElementById('task-filter-empty');
+        const count = document.getElementById('task-count');
+
+        filter?.addEventListener('change', () => {
+            const selectedStatus = filter.value;
+            let visibleRows = 0;
+
+            rows.forEach((row) => {
+                const shouldShow = !selectedStatus || row.dataset.taskStatus === selectedStatus;
+                row.classList.toggle('hidden', !shouldShow);
+                visibleRows += Number(shouldShow);
+            });
+
+            emptyState?.classList.toggle('hidden', visibleRows > 0);
+
+            if (count) {
+                count.textContent = `Showing ${visibleRows} of ${rows.length} tasks`;
+            }
+        });
+    });
+</script>
 
 @endsection

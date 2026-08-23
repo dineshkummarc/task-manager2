@@ -41,7 +41,11 @@ class RoleResource extends Resource
                             ->label('Role Name')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->disabled(fn (?Role $record): bool => strtolower((string) $record?->name) === 'admin')
+                            ->helperText(fn (?Role $record): ?string => strtolower((string) $record?->name) === 'admin'
+                                ? 'The Admin role name is locked.'
+                                : null),
 
                         Forms\Components\CheckboxList::make('permissions')
                             ->relationship('permissions', 'name')
@@ -89,11 +93,12 @@ class RoleResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('permissions.name')
-                    ->label('Permissions List')
+                    ->label('Permissions')
                     ->badge()
                     ->separator(',')
                     ->limitList(4)
-                    ->expandableLimitedList(),
+                    ->expandableLimitedList()
+                    ->visibleFrom('md'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')

@@ -155,7 +155,7 @@
             margin-top: 1px;
         }
 
-        /* Tasks cell (right, holds all task chips for that employee) */
+        /* Tasks cell */
         .th-tasks-cell {
             padding: 14px 20px;
         }
@@ -249,6 +249,29 @@
             font-size: 13px;
         }
 
+        .th-report-title { margin: 0; padding: 14px 18px 10px; font-size: 14px; font-weight: 700; line-height: 1.35; color: #111827; }
+        .th-report-table { width: 100%; border-collapse: collapse; }
+        
+        /* Table text sizes increased slightly here */
+        .th-report-table th { padding: 12px 16px; background: #F8FAFC; border-bottom: 1px solid #E5E7EB; color: #64748B; font-size: 11px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.03em; }
+        .th-report-table td { padding: 12px 16px; border-bottom: 1px solid #EEF2F7; color: #334155; font-size: 13px; vertical-align: middle; }
+        
+        /* Prominent thick bottom border for all cells on the last row of a user group */
+        .th-report-table tr.th-user-last-row td {
+            border-bottom: 3px solid #94A3B8 !important;
+        }
+
+        .th-report-table tr:last-child td { border-bottom: none; }
+        .th-report-table tr:nth-child(odd) td { background: #FCFDFE; }
+        
+        /* Employee cell */
+        .th-report-employee { width: 145px; border-bottom: 3px solid #94A3B8 !important; border-right: 1px solid #E5E7EB; background: #F5F8FF !important; color: #1E293B !important; font-size: 14px; font-weight: 700; text-align: center; vertical-align: middle !important; white-space: nowrap; }
+        
+        .th-report-work { min-width: 150px; color: #0F172A !important; font-weight: 600; font-size: 13.5px; }
+        .th-report-estimate { width: 130px; white-space: nowrap; font-size: 12.5px; color: #475569; }
+        .th-report-description { color: #475569 !important; font-size: 12.5px; }
+        .th-report-completed { width: 130px; color: #15803D !important; font-weight: 700; white-space: nowrap; font-size: 13px; }
+
         /* Dark mode */
         .dark .th-input,
         .dark .th-select { background-color: #111827; border-color: #374151; color: #E5E7EB; }
@@ -261,6 +284,8 @@
         .dark .th-chip { background: #1F2937; border-color: #2D3748; }
         .dark .th-task-title { color: #F3F4F6; }
         .dark .th-footer { border-color: #1F2937; }
+        .dark .th-report-table tr.th-user-last-row td { border-bottom: 3px solid #64748B !important; }
+        .dark .th-report-employee { border-bottom: 3px solid #64748B !important; }
 
         /* Mobile responsive */
         @media (max-width: 640px) {
@@ -301,8 +326,14 @@
             .th-filters .th-btn-pdf { width: 100%; box-sizing: border-box; }
 
             .th-card { width: 100%; border-radius: 12px; overflow-x: auto; }
+            .th-report-table th, .th-report-table td { padding: 10px; font-size: 11px; }
+            
+            .th-report-estimate { display: none; }
+            .th-report-description { display: table-cell; font-size: 11px; color: #475569; max-width: 130px; word-break: break-word; }
 
-            /* Stack table into blocks on mobile */
+            .th-report-employee { width: 80px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+            .th-report-completed { width: 75px; font-size: 11px; }
+
             .th-grid, .th-grid thead, .th-grid tbody, .th-grid tr, .th-grid td, .th-grid th {
                 display: block;
                 width: 100%;
@@ -322,7 +353,7 @@
             .th-task-chips { flex-direction: column; gap: 8px; }
             .th-chip { min-width: 0; max-width: 100%; }
 
-            .th-footer { padding: 10px 12px; font-size: 10px; gap: 7px; }
+            .th-footer { padding: 10px 12px; font-size: 11px; gap: 7px; }
             .th-footer > div { max-width: 100%; overflow-x: auto; }
         }
 
@@ -400,62 +431,43 @@
         <div class="th-card">
 
             @if ($groupedUsers->count())
-                <table class="th-grid">
+                @php
+                    $reportTasks = $groupedUsers->getCollection()
+                        ->flatMap(fn ($user) => $user->historyTasks->map(fn ($task) => ['task' => $task, 'user' => $user]))
+                        ->sortBy(fn ($row) => $row['task']->updated_at)
+                        ->values();
+                @endphp
+                <h3 class="th-report-title">{{ match ($this->period) { 'weekly' => 'Last Week Completed Tasks', 'monthly' => 'Monthly Completed Tasks', 'overall' => 'Overall Completed Tasks', default => "Today's Completed Tasks" } }}</h3>
+                @php $tasksByEmployee = $reportTasks->groupBy(fn ($row) => $row['user']->id); @endphp
+                <table class="th-report-table">
                     <thead>
                         <tr>
                             <th>Employee</th>
-                            <th>Tasks</th>
+                            <th>Work</th>
+                            <th>Assigned Time</th>
+                            <th class="th-report-estimate">Estimated Time</th>
+                            <th class="th-report-description">Description</th>
+                            <th>Completed Time</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($groupedUsers as $user)
-                            @php
-                                $tasks     = $user->historyTasks;
-                                $taskCount = $tasks->count();
-                            @endphp
-                            <tr class="th-row" wire:key="history-user-{{ $user->id }}">
-
-                                {{-- Employee (left column) --}}
-                                <td class="th-emp-cell">
-                                    <div class="th-emp-inner">
-                                        <img src="{{ $this->getAvatarUrl($user) }}" alt="{{ $user->name }}" class="th-avatar">
-                                        <div class="th-user-info">
-                                            <div class="th-user-name">{{ $user->name }}</div>
-                                            <div class="th-user-meta">
-                                                {{ $taskCount }} {{ $taskCount === 1 ? 'Task' : 'Tasks' }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                {{-- Tasks (right column, all chips together) --}}
-                                <td class="th-tasks-cell">
-                                    <div class="th-task-chips">
-                                        @forelse ($tasks as $index => $task)
-                                            <div class="th-chip">
-                                                <div class="th-chip-top">
-                                                    <span class="th-dot {{ $index % 2 === 0 ? 'th-dot-indigo' : 'th-dot-emerald' }}"></span>
-                                                    <div style="min-width:0;">
-                                                        <div class="th-task-title">{{ $task->title }}</div>
-                                                        <div class="th-task-desc">
-                                                            {{ trim(strip_tags((string) $task->description)) ?: '—' }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="th-chip-bottom">
-                                                    <span class="th-badge-done">Completed</span>
-                                                    <div class="th-date">
-                                                        <x-filament::icon icon="heroicon-o-calendar" class="h-3 w-3" />
-                                                        {{ $task->updated_at?->timezone('Asia/Karachi')->format('M d, h:i A') }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <span style="font-size:12px; color:#9CA3AF;">No tasks</span>
-                                        @endforelse
-                                    </div>
-                                </td>
-                            </tr>
+                        @foreach ($tasksByEmployee as $userTasks)
+                            @foreach ($userTasks as $row)
+                                @php 
+                                    $task = $row['task']; 
+                                    $isLastRowForUser = $loop->last;
+                                @endphp
+                                <tr wire:key="history-task-{{ $task->id }}" class="{{ $isLastRowForUser ? 'th-user-last-row' : '' }}">
+                                    @if ($loop->first)
+                                        <td class="th-report-employee" rowspan="{{ $userTasks->count() }}">{{ $row['user']->name }}</td>
+                                    @endif
+                                    <td class="th-report-work">{{ $task->title }}</td>
+                                    <td class="th-report-completed">{{ $task->created_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
+                                    <td class="th-report-estimate">{{ $task->estimated_minutes ? $task->estimated_minutes . ' min' : '—' }}</td>
+                                    <td class="th-report-description">{{ trim(strip_tags((string) $task->description)) ?: '—' }}</td>
+                                    <td class="th-report-completed">{{ $task->updated_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
+                                </tr>
+                            @endforeach
                         @endforeach
                     </tbody>
                 </table>

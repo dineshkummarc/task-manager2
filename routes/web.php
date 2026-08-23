@@ -30,6 +30,7 @@ Route::middleware(['auth', 'employee'])->group(function () {
     Route::get('/employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
     Route::get('/employee/tasks', [EmployeeDashboardController::class, 'allTasks'])->name('employee.tasks.index');
     Route::get('/employee/history', [EmployeeDashboardController::class, 'history'])->name('employee.history');
+    Route::get('/employee/activities', [EmployeeDashboardController::class, 'activities'])->name('employee.activities');
     Route::get('/employee/profile', [EmployeeDashboardController::class, 'profile'])->name('employee.profile');
     Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');
     

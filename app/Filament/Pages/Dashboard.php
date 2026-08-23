@@ -26,9 +26,9 @@ class Dashboard extends BaseDashboard
         return [
             AdminStatsOverview::class,
             TeamScheduleMatrixWidget::class,
-            TasksProgressPieChart::class,
-            TasksDataLineChart::class,
-            TeamPerformanceTableWidget::class,
+            // TasksProgressPieChart::class,
+            // TasksDataLineChart::class,
+            // TeamPerformanceTableWidget::class,
         ];
     }
 }
