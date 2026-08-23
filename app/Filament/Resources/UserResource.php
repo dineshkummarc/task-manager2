@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Pages\UserTaskHistory;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
-use App\Models\User;
+use App\Models\Department;
 use App\Models\Project;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,14 +15,18 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
+
     protected static ?string $navigationGroup = null;
+
     protected static ?string $navigationLabel = 'Employees';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
@@ -37,6 +43,12 @@ class UserResource extends Resource
                             ->email()
                             ->required()
                             ->maxLength(255),
+
+                        Forms\Components\TextInput::make('phone')
+                            ->label('WhatsApp Number')
+                            ->tel()
+                            ->helperText('Include country code, for example: 923001234567.')
+                            ->maxLength(25),
 
                         Forms\Components\TextInput::make('password')
                             ->password()
@@ -63,7 +75,7 @@ class UserResource extends Resource
                                 $projectId = $get('project_id');
 
                                 return $projectId
-                                    ? \App\Models\Department::where('project_id', $projectId)->orderBy('name')->pluck('name', 'id')
+                                    ? Department::where('project_id', $projectId)->orderBy('name')->pluck('name', 'id')
                                     : [];
                             })
                             ->reactive()
@@ -77,8 +89,8 @@ class UserResource extends Resource
                                 if (! $departmentId) {
                                     return [];
                                 }
-                                
-                                $department = \App\Models\Department::find($departmentId);
+
+                                $department = Department::find($departmentId);
                                 if (! $department || empty($department->responsibilities)) {
                                     return [];
                                 }
@@ -97,14 +109,14 @@ class UserResource extends Resource
                                 $record->roles()->sync($roleIds);
 
                                 if (! empty($roleIds)) {
-                                    $role = \Spatie\Permission\Models\Role::find($roleIds[0]);
+                                    $role = Role::find($roleIds[0]);
                                     if ($role) {
                                         $record->updateQuietly(['role' => $role->name]);
                                     }
                                 }
                             })
                             ->label('Account Type')
-                            ->default(fn () => \Spatie\Permission\Models\Role::where('name', 'employee')->value('id'))
+                            ->default(fn () => Role::where('name', 'employee')->value('id'))
                             ->preload()
                             ->searchable()
                             ->required(),
@@ -136,7 +148,7 @@ class UserResource extends Resource
             ]);
     }
 
-    public static function table(Tables\Table $table): Tables\Table
+    public static function table(Table $table): Table
     {
         return $table
             ->columns([
@@ -147,6 +159,10 @@ class UserResource extends Resource
 
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('phone')
+                    ->label('WhatsApp')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Role')
@@ -171,13 +187,18 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('performance')
                     ->label('Performance')
                     ->state(function (User $record): string {
-                        return number_format($record->getPerformancePercentage(), 0) . '%';
+                        return number_format($record->getPerformancePercentage(), 0).'%';
                     })
                     ->badge()
                     ->color(function (User $record): string {
                         $perf = $record->getPerformancePercentage();
-                        if ($perf >= 90) return 'success';
-                        if ($perf >= 70) return 'warning';
+                        if ($perf >= 90) {
+                            return 'success';
+                        }
+                        if ($perf >= 70) {
+                            return 'warning';
+                        }
+
                         return 'danger';
                     }),
 
@@ -199,8 +220,8 @@ class UserResource extends Resource
                     ->label('History')
                     ->icon('heroicon-o-clipboard-document-check')
                     ->color('success')
-                    ->visible(fn (): bool => \App\Filament\Pages\UserTaskHistory::canAccess())
-                    ->url(fn (User $record): string => \App\Filament\Pages\UserTaskHistory::getUrl() . '?user=' . $record->id),
+                    ->visible(fn (): bool => UserTaskHistory::canAccess())
+                    ->url(fn (User $record): string => UserTaskHistory::getUrl().'?user='.$record->id),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

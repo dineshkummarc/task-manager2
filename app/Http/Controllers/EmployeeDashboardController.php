@@ -9,6 +9,35 @@ use App\Models\UserActivity;
 
 class EmployeeDashboardController extends Controller
 {
+    public function notifications(Request $request)
+    {
+        $user = $request->user();
+        $tasks = $user->assignedTasks()->with('creator')->latest()->take(5)->get();
+        $unreadQuery = $user->assignedTasks();
+
+        if ($user->task_notifications_read_at) {
+            $unreadQuery->where('created_at', '>', $user->task_notifications_read_at);
+        }
+
+        return response()->json([
+            'unreadCount' => $unreadQuery->count(),
+            'tasks' => $tasks->map(fn (Task $task) => [
+                'title' => $task->title,
+                'assignedBy' => $task->creator?->name ?? 'Self',
+                'createdAt' => $task->created_at?->diffForHumans() ?? 'Just now',
+            ])->values(),
+        ]);
+    }
+
+    public function markNotificationsRead(Request $request)
+    {
+        $request->user()->forceFill([
+            'task_notifications_read_at' => now(),
+        ])->save();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function index()
     {
         $user = Auth::user();

@@ -1,10 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EmployeeAuthController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeTaskController;
+use App\Http\Controllers\TaskNotificationController;
 use App\Http\Controllers\UserTaskHistoryExportController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
@@ -33,10 +34,14 @@ Route::middleware(['auth', 'employee'])->group(function () {
     Route::get('/employee/activities', [EmployeeDashboardController::class, 'activities'])->name('employee.activities');
     Route::get('/employee/profile', [EmployeeDashboardController::class, 'profile'])->name('employee.profile');
     Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');
-    
+    Route::get('/employee/notifications', [EmployeeDashboardController::class, 'notifications'])->name('employee.notifications');
+    Route::post('/employee/notifications/read', [EmployeeDashboardController::class, 'markNotificationsRead'])->name('employee.notifications.read');
+
     Route::post('/employee/logout', [EmployeeAuthController::class, 'logout'])->name('employee.logout');
 
     // Task actions
     Route::post('/employee/tasks/create', [EmployeeTaskController::class, 'store'])->name('employee.tasks.store');
     Route::post('/employee/tasks/{task}/status', [EmployeeTaskController::class, 'updateStatus'])->name('employee.tasks.status');
 });
+Route::middleware('auth')->get('/tasks/{task}/notifications/email', [TaskNotificationController::class, 'sendEmail'])
+    ->name('tasks.notifications.email');

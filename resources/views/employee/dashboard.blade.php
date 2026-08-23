@@ -3,23 +3,24 @@
 @section('content')
 @php
     $notificationTasks = $user->assignedTasks()->with('creator')->latest()->take(5)->get();
+    $unreadNotificationCount = $user->assignedTasks()
+        ->when($user->task_notifications_read_at, fn ($query, $readAt) => $query->where('created_at', '>', $readAt))
+        ->count();
 @endphp
 <!-- Scrollable Main Content -->
-<div class="flex-1 overflow-y-auto bg-[#FAFAFB] p-6 lg:p-8">
+<div class="employee-dashboard flex-1 overflow-y-auto bg-[#f8f8fc] p-5 md:p-8 lg:p-10 relative">
     
     <!-- Top Bar (Desktop) -->
-    <div class="hidden md:flex justify-end items-center mb-8">
+    <div class="hidden md:flex justify-end items-center mb-8 lg:absolute lg:top-8 lg:right-10 lg:z-10">
         <div class="flex items-center gap-4">
             <div class="relative">
                 <button type="button" data-notification-toggle class="relative p-2 text-slate-400 hover:text-indigo-600 transition-colors" aria-label="Recent tasks">
                 <i class="ph ph-bell text-2xl"></i>
-                @if ($notificationTasks->isNotEmpty())
-                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-[#FAFAFB]"></span>
-                @endif
+                <span data-notification-badge class="{{ $unreadNotificationCount ? '' : 'hidden' }} absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 border-2 border-[#FAFAFB] text-[10px] font-bold text-white">{{ $unreadNotificationCount }}</span>
                 </button>
                 <div data-notification-panel class="hidden absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden">
                     <div class="px-4 py-3 border-b border-slate-100 font-bold text-slate-800">Recent Tasks</div>
-                    <div class="max-h-72 overflow-y-auto">
+                    <div data-notification-list class="max-h-72 overflow-y-auto">
                         @forelse ($notificationTasks as $task)
                             <a href="{{ route('employee.tasks.index') }}" class="block px-4 py-3 border-b border-slate-50 hover:bg-slate-50">
                                 <p class="text-sm font-semibold text-slate-800 truncate">{{ $task->title }}</p>
@@ -80,7 +81,7 @@
     </div>
 
     <!-- Welcome Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 employee-welcome">
         <div>
             <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
                 Welcome back, {{ explode(' ', trim($user->name))[0] }}! 👋
@@ -94,10 +95,11 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-10">
         <!-- Pending Tasks -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div class="employee-stat-card employee-stat-pending bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="absolute bottom-0 left-0 w-full h-1 bg-indigo-500 rounded-b-2xl"></div>
+            <i class="employee-stat-art ph ph-clipboard-text"></i>
             <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                 <i class="ph-fill ph-clipboard-text text-2xl"></i>
             </div>
@@ -107,8 +109,9 @@
         </div>
         
         <!-- In Progress -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div class="employee-stat-card employee-stat-progress bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="absolute bottom-0 left-0 w-full h-1 bg-amber-500 rounded-b-2xl"></div>
+            <i class="employee-stat-art ph ph-gear-six"></i>
             <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                 <i class="ph-fill ph-clock-countdown text-2xl"></i>
             </div>
@@ -118,8 +121,9 @@
         </div>
 
         <!-- Completed -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div class="employee-stat-card employee-stat-completed bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="absolute bottom-0 left-0 w-full h-1 bg-emerald-500 rounded-b-2xl"></div>
+            <i class="employee-stat-art ph ph-seal-check"></i>
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                 <i class="ph-fill ph-check-circle text-2xl"></i>
             </div>
@@ -129,8 +133,9 @@
         </div>
 
         <!-- Overdue -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div class="employee-stat-card employee-stat-overdue bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="absolute bottom-0 left-0 w-full h-1 bg-rose-500 rounded-b-2xl"></div>
+            <i class="employee-stat-art ph ph-warning"></i>
             <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                 <i class="ph-fill ph-hourglass-high text-2xl"></i>
             </div>
@@ -141,12 +146,16 @@
     </div>
 
     <!-- Create New Task Form -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-8 overflow-hidden">
-        <div class="p-5 md:p-6 border-b border-slate-100 bg-indigo-50/30">
-            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <i class="ph-fill ph-plus-circle text-indigo-500"></i>
-                Create New Task
-            </h3>
+    <div class="employee-create-card bg-white rounded-[1.5rem] border border-slate-100 shadow-sm mb-8 overflow-hidden">
+        <div class="employee-create-heading p-6 md:p-8 border-b border-slate-100 bg-white relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-3">
+                    <span class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-indigo-200"><i class="ph-fill ph-plus"></i></span>
+                    Create New Task
+                </h3>
+                <p class="ml-[3.75rem] -mt-2 text-sm text-slate-500">Add a new task and keep your work organized</p>
+            </div>
+            <i class="ph ph-clipboard-text employee-create-art"></i>
         </div>
         <div class="p-5 md:p-6">
             <form action="{{ route('employee.tasks.store') }}" method="POST">
@@ -165,10 +174,14 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Description (Optional)</label>
                     <textarea name="description" rows="3" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400" placeholder="Briefly describe what needs to be done..."></textarea>
                 </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2">
-                        Save Task
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-200 flex items-center gap-2">
                         <i class="ph ph-paper-plane-right"></i>
+                        Create Task
+                    </button>
+                    <button type="reset" class="px-6 py-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
+                        <i class="ph ph-x"></i>
+                        Reset
                     </button>
                 </div>
             </form>
