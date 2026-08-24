@@ -37,6 +37,12 @@ class TeamScheduleMatrixWidget extends Widget
     /** @var array<int, array<string, mixed>> */
     public array $historyTasks = [];
 
+    public bool $showCompletionNoteModal = false;
+
+    public string $completionNoteTaskTitle = '';
+
+    public string $completionNote = '';
+
     public function mount(): void
     {
         $this->selectedDate = now()->toDateString();
@@ -128,6 +134,24 @@ class TeamScheduleMatrixWidget extends Widget
         $this->historyUserId = null;
         $this->historyUserName = '';
         $this->historyTasks = [];
+    }
+
+    public function openCompletionNote(int $taskId): void
+    {
+        $task = Task::query()->findOrFail($taskId);
+
+        abort_unless($task->status === 'completed' && filled($task->completion_note), 404);
+
+        $this->completionNoteTaskTitle = $task->title;
+        $this->completionNote = $task->completion_note;
+        $this->showCompletionNoteModal = true;
+    }
+
+    public function closeCompletionNote(): void
+    {
+        $this->showCompletionNoteModal = false;
+        $this->completionNoteTaskTitle = '';
+        $this->completionNote = '';
     }
 
     protected function getViewData(): array
@@ -496,6 +520,7 @@ class TeamScheduleMatrixWidget extends Widget
             'id' => $task->id,
             'title' => $title,
             'description' => trim(html_entity_decode(strip_tags((string) $task->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+            'completion_note' => trim((string) $task->completion_note),
             'started_at' => $task->created_at
                 ? $this->inAppTz($task->created_at)->format('M j, Y g:i A')
                 : '—',

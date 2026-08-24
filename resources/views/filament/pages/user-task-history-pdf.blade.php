@@ -29,6 +29,7 @@
         .th-report-work { min-width: 140px; color: #0F172A !important; font-size: 13.5px; font-weight: 600; }
         .th-report-estimate { width: 120px; white-space: nowrap; font-size: 12.5px; color: #475569; }
         .th-report-description { color: #64748B !important; font-size: 12.5px; max-width: 200px; word-break: break-word; }
+        .th-report-note { color: #475569 !important; font-size: 12.5px; max-width: 210px; word-break: break-word; }
         .th-report-completed { width: 120px; color: #15803D !important; font-size: 13px; font-weight: 700; white-space: nowrap; }
 
         .empty { padding: 35px; text-align: center; color: #94a3b8; font-size: 13px; border: 1px solid #e2e8f0; border-radius: 10px; }
@@ -64,6 +65,7 @@
                     <th>Assigned Time</th>
                     <th>Estimated Time</th>
                     <th>Description</th>
+                    <th>Completion Note</th>
                     <th>Completed Time</th>
                 </tr>
             </thead>
@@ -83,6 +85,7 @@
                             <td class="th-report-completed">{{ $task->created_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
                             <td class="th-report-estimate">{{ $task->estimated_minutes ? $task->estimated_minutes . ' min' : '—' }}</td>
                             <td class="th-report-description">{{ trim(strip_tags((string) $task->description)) ?: '—' }}</td>
+                            <td class="th-report-note">{{ trim(strip_tags((string) $task->completion_note)) ?: '—' }}</td>
                             <td class="th-report-completed">{{ $task->updated_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
                         </tr>
                     @endforeach

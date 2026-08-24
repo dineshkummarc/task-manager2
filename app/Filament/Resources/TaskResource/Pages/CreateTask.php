@@ -25,10 +25,10 @@ class CreateTask extends CreateRecord
         $task = $this->getRecord();
         $assignee = $task->assignee;
         $phone = preg_replace('/\D+/', '', (string) $assignee?->phone);
-        $message = "\u{1F4CB} *New Task Assigned!*\n\n" .
-           "\u{1F4CC} *Title:* " . $task->title . "\n\n" .
-           "\u{1F4DD} *Description:* " . strip_tags($task->description ?? 'N/A') . "\n\n" .
-           "\u{1F464} *Assigned by:* *" . auth()->user()->name . "*";
+        $message = "*New Task Assigned!*\n\n" .
+           "*Title:* " . $task->title . "\n\n" .
+           "*Description:* " . strip_tags($task->description ?? 'N/A') . "\n\n" .
+           "*Assigned by:* *" . auth()->user()->name . "*";
 
         session()->flash('task_notification_choice', [
             'employeeName' => $assignee?->name ?? 'the employee',

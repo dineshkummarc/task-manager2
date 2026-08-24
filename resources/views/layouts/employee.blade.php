@@ -36,34 +36,6 @@
         .transition-all-fast {
             transition: all 0.2s ease-in-out;
         }
-        @media (min-width: 768px) {
-            body { padding: 4px; }
-            #sidebar { border-radius: 1.5rem 0 0 1.5rem; box-shadow: 8px 0 30px rgba(79, 70, 229, .04); }
-            main { border-radius: 0 1.5rem 1.5rem 0; }
-        }
-        #sidebar nav a.bg-indigo-50 {
-            background: linear-gradient(115deg, #4f2cff, #9f7aea) !important;
-            box-shadow: 0 12px 20px rgba(91, 57, 238, .22);
-            color: #fff !important;
-        }
-        #sidebar nav a.bg-indigo-50 i { color: #fff !important; }
-        .employee-dashboard { background-image: radial-gradient(circle at 75% 2%, rgba(221, 214, 254, .24), transparent 21rem); }
-        .employee-welcome h2 { color: #102451; font-size: clamp(1.65rem, 2.4vw, 2.15rem); letter-spacing: -.035em; }
-        .employee-stat-card { min-height: 14.75rem; box-shadow: 0 12px 28px rgba(38, 44, 73, .08); }
-        .employee-stat-card h3, .employee-stat-card p { position: relative; z-index: 1; }
-        .employee-stat-card h3 { color: #0f2249; }
-        .employee-stat-art { bottom: 1.4rem; font-size: 6.75rem; opacity: .13; position: absolute; right: .8rem; }
-        .employee-stat-pending .employee-stat-art { color: #6d4aff; }
-        .employee-stat-progress .employee-stat-art { color: #f59e0b; }
-        .employee-stat-completed .employee-stat-art { color: #22c55e; }
-        .employee-stat-overdue .employee-stat-art { color: #fb4a68; }
-        .employee-create-card { box-shadow: 0 14px 35px rgba(38, 44, 73, .08); }
-        .employee-create-art { bottom: -1.9rem; color: #8b72ff; font-size: 10rem; opacity: .16; position: absolute; right: 2rem; transform: rotate(10deg); }
-        @media (max-width: 640px) {
-            .employee-stat-card { min-height: 11.5rem; }
-            .employee-stat-art { font-size: 5rem; }
-            .employee-create-art { font-size: 7rem; right: .5rem; }
-        }
     </style>
 </head>
 <body class="text-slate-800 antialiased h-screen overflow-hidden flex flex-col md:flex-row">

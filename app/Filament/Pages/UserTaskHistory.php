@@ -39,6 +39,12 @@ class UserTaskHistory extends Page
 
     public string $search = '';
 
+    public bool $showCompletionNoteModal = false;
+
+    public string $completionNoteTaskTitle = '';
+
+    public string $completionNote = '';
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -112,6 +118,24 @@ class UserTaskHistory extends Page
 
         $this->selectedUserId = $userId ? (int) $userId : null;
         $this->resetPage();
+    }
+
+    public function openCompletionNote(int $taskId): void
+    {
+        $task = Task::query()->findOrFail($taskId);
+
+        abort_unless($task->status === 'completed' && filled($task->completion_note), 404);
+
+        $this->completionNoteTaskTitle = $task->title;
+        $this->completionNote = $task->completion_note;
+        $this->showCompletionNoteModal = true;
+    }
+
+    public function closeCompletionNote(): void
+    {
+        $this->showCompletionNoteModal = false;
+        $this->completionNoteTaskTitle = '';
+        $this->completionNote = '';
     }
 
     public function canFilterUsers(): bool
@@ -243,13 +267,14 @@ class UserTaskHistory extends Page
 
         $writer = new Writer();
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['User Name', 'Task Name', 'Details', 'Assigned At', 'Completed At']));
+        $writer->addRow(Row::fromValues(['User Name', 'Task Name', 'Details', 'Completion Note', 'Assigned At', 'Completed At']));
 
         foreach ($tasks as $task) {
             $writer->addRow(Row::fromValues([
                 $task->assignee?->name ?? '—',
                 $task->title,
                 trim(strip_tags((string) $task->description)),
+                trim(strip_tags((string) $task->completion_note)),
                 $task->created_at
                     ?->timezone('Asia/Karachi')
                     ->format('M d, Y h:i A'),

@@ -72,6 +72,15 @@
             cursor: pointer;
             transition: background 0.15s;
         }
+        .th-btn-note { background: #ecfdf3; border: 1px solid #86efac; border-radius: 7px; color: #15803d; cursor: pointer; font-size: 11px; font-weight: 700; padding: 5px 9px; white-space: nowrap; }
+        .th-btn-note:hover { background: #dcfce7; }
+        .th-no-note { color: #94a3b8; }
+        .th-note-overlay { align-items: center; background: rgba(15, 23, 42, .45); display: flex; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 100; }
+        .th-note-modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 45px rgba(15, 23, 42, .25); max-width: 440px; padding: 24px; position: relative; width: 100%; }
+        .th-note-modal h3 { color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; }
+        .th-note-task { color: #64748b; font-size: 13px; font-weight: 600; margin: 4px 0 16px; }
+        .th-note-text { background: #f8fafc; border-radius: 8px; color: #334155; line-height: 1.6; margin: 0; padding: 12px; white-space: pre-wrap; }
+        .th-note-close { background: transparent; border: 0; color: #94a3b8; cursor: pointer; font-size: 24px; position: absolute; right: 13px; top: 9px; }
         .th-btn-excel:hover { background: #047857; }
         .th-btn-pdf {
             display: inline-flex;
@@ -447,6 +456,7 @@
                             <th>Assigned Time</th>
                             <th class="th-report-estimate">Estimated Time</th>
                             <th class="th-report-description">Description</th>
+                            <th>Completion Note</th>
                             <th>Completed Time</th>
                         </tr>
                     </thead>
@@ -465,6 +475,13 @@
                                     <td class="th-report-completed">{{ $task->created_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
                                     <td class="th-report-estimate">{{ $task->estimated_minutes ? $task->estimated_minutes . ' min' : '—' }}</td>
                                     <td class="th-report-description">{{ trim(strip_tags((string) $task->description)) ?: '—' }}</td>
+                                    <td>
+                                        @if(filled($task->completion_note))
+                                            <button type="button" class="th-btn-note" wire:click="openCompletionNote({{ $task->id }})">Read Note</button>
+                                        @else
+                                            <span class="th-no-note">—</span>
+                                        @endif
+                                    </td>
                                     <td class="th-report-completed">{{ $task->updated_at?->timezone('Asia/Karachi')->format('h:i A') }}</td>
                                 </tr>
                             @endforeach
@@ -487,5 +504,17 @@
             @endif
 
         </div>
+
+        @if($showCompletionNoteModal)
+            <div class="th-note-overlay" wire:click.self="closeCompletionNote">
+                <section class="th-note-modal" role="dialog" aria-modal="true">
+                    <button type="button" class="th-note-close" wire:click="closeCompletionNote" aria-label="Close">×</button>
+                    <h3>Completion Note</h3>
+                    <p class="th-note-task">{{ $completionNoteTaskTitle }}</p>
+                    <p class="th-note-text">{{ $completionNote }}</p>
+                    <button type="button" class="th-btn-note" wire:click="closeCompletionNote">Close</button>
+                </section>
+            </div>
+        @endif
     </div>
 </x-filament-panels::page>

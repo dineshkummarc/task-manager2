@@ -47,12 +47,6 @@ class TaskResource extends Resource
                     ->label('Project')
                     ->options(Project::query()->orderByRaw("name = 'BPOVO' DESC")->orderBy('name')->pluck('name', 'id'))
                     ->default(fn () => Project::where('name', 'BPOVO')->value('id'))
-                    ->reactive()
-                    ->afterStateUpdated(function (callable $set) {
-                        $set('department_id', null);
-                        $set('job_responsibility', null);
-                        $set('assigned_to', null);
-                    })
                     ->searchable()
                     ->preload()
                     ->required(),
@@ -60,13 +54,7 @@ class TaskResource extends Resource
                 // 2. Department Select
                 Forms\Components\Select::make('department_id')
                     ->label('Department')
-                    ->options(function (callable $get) {
-                        $projectId = $get('project_id');
-
-                        return $projectId
-                            ? \App\Models\Department::where('project_id', $projectId)->orderBy('name')->pluck('name', 'id')
-                            : [];
-                    })
+                    ->options(\App\Models\Department::query()->orderBy('name')->pluck('name', 'id'))
                     ->reactive()
                     ->afterStateUpdated(function (callable $set) {
                         $set('job_responsibility', null);
@@ -103,15 +91,13 @@ class TaskResource extends Resource
                     ->label('Assign To (Employee)')
                     ->options(function (callable $get) {
                         $departmentId = $get('department_id');
-                        $projectId = $get('project_id');
                         $responsibility = $get('job_responsibility');
 
-                        if (! $projectId || ! $departmentId || ! $responsibility) {
+                        if (! $departmentId || ! $responsibility) {
                             return [];
                         }
 
-                        return \App\Models\User::where('project_id', $projectId)
-                            ->where('department_id', $departmentId)
+                        return \App\Models\User::where('department_id', $departmentId)
                             ->where('job_responsibility', $responsibility)
                             ->where('role', 'employee')
                             ->pluck('name', 'id');
@@ -150,7 +136,14 @@ class TaskResource extends Resource
                                     ->disabled()
                                     ->default(fn ($record) => $record->block_reason)
                                     ->columnSpanFull()
-                                    ->visible(fn ($record) => filled($record->block_reason))
+                                    ->visible(fn ($record) => filled($record->block_reason)),
+                                Forms\Components\Textarea::make('completion_note')
+                                    ->label('Completion Note')
+                                    ->disabled()
+                                    ->default(fn ($record) => $record->completion_note)
+                                    ->columnSpanFull()
+                                    ->rows(5)
+                                    ->visible(fn ($record) => filled($record->completion_note))
                             ])
                             ->modalHeading(fn ($record) => $record->title)
                             ->modalSubmitAction(false)
@@ -188,6 +181,21 @@ class TaskResource extends Resource
                     ->preload(),
             ])
             ->actions([
+                Tables\Actions\Action::make('read_completion_note')
+                    ->label('Read Note')
+                    ->icon('heroicon-o-chat-bubble-bottom-center-text')
+                    ->color('success')
+                    ->visible(fn (Task $record): bool => $record->status === 'completed' && filled($record->completion_note))
+                    ->modalHeading(fn (Task $record): string => 'Completion Note — ' . $record->title)
+                    ->form([
+                        Forms\Components\Textarea::make('completion_note')
+                            ->label('Employee Completion Note')
+                            ->default(fn (Task $record): string => $record->completion_note)
+                            ->disabled()
+                            ->rows(7),
+                    ])
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close'),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

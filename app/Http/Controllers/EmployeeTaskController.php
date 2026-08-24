@@ -16,6 +16,7 @@ class EmployeeTaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'estimated_minutes' => 'nullable|integer|min:0',
+            'project_id' => 'required|exists:projects,id',
         ]);
 
         $user = Auth::user();
@@ -27,7 +28,7 @@ class EmployeeTaskController extends Controller
             'user_id' => $user->id,
             'assigned_to' => $user->id,
             'assigned_by' => $user->id,
-            'project_id' => $user->project_id,
+            'project_id' => $request->integer('project_id'),
             'department_id' => $user->department_id,
             'job_responsibility' => $user->job_responsibility,
             'status' => 'pending',
@@ -54,7 +55,8 @@ class EmployeeTaskController extends Controller
 
         $request->validate([
             'status' => 'required|in:pending,in_progress,blockage,completed',
-            'block_reason' => 'nullable|string'
+            'block_reason' => 'nullable|string',
+            'completion_note' => 'nullable|string|max:5000',
         ]);
 
         $newStatus = $request->status;
@@ -64,12 +66,15 @@ class EmployeeTaskController extends Controller
             'status' => $newStatus,
             'is_blocked' => $isBlocked,
             'block_reason' => $isBlocked ? $request->block_reason : null,
+            'completion_note' => $newStatus === 'completed' ? $request->completion_note : null,
         ]);
 
         UserActivity::create([
             'user_id' => $user->id,
             'action' => 'updated status',
-            'description' => 'Updated task "' . $task->title . '" status to ' . $newStatus . ($isBlocked && $request->block_reason ? ' (Reason: ' . $request->block_reason . ')' : ''),
+            'description' => 'Updated task "' . $task->title . '" status to ' . $newStatus
+                . ($isBlocked && $request->block_reason ? ' (Reason: ' . $request->block_reason . ')' : '')
+                . ($newStatus === 'completed' && $request->completion_note ? ' (Completion note added)' : ''),
         ]);
 
         return back()->with('success', 'Task status updated to ' . ucfirst($newStatus) . '.');

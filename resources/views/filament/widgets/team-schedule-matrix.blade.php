@@ -63,11 +63,16 @@
                                     $status=$item['status']==='blockage'?'unresolved':$item['status'];
                                     $statusLabel=match($status){'completed'=>'Completed','in_progress'=>'In Process','unresolved'=>'Unresolved',default=>'Pending'};
                                 @endphp
-                                <button type="button" class="tsm-task tsm-task-{{ $status }}" wire:click="viewUserReport({{ $item['userId'] }})" title="Open {{ $item['userName'] }}'s employee report">
+                                <div class="tsm-task tsm-task-{{ $status }}">
+                                    <button type="button" class="tsm-task-main" wire:click="viewUserReport({{ $item['userId'] }})" title="Open {{ $item['userName'] }}'s employee report">
                                     <span>{{ $item['title'] }}</span>
                                     @if(! $selectedUserId)<small>{{ $item['userName'] }}</small>@endif
                                     <strong>{{ $statusLabel }}</strong>
-                                </button>
+                                    </button>
+                                    @if($status === 'completed' && filled($item['completion_note']))
+                                        <button type="button" class="tsm-read-note" wire:click="openCompletionNote({{ $item['id'] }})">Read Note</button>
+                                    @endif
+                                </div>
                             @endforeach
                         </div>
                     </div>
@@ -75,6 +80,18 @@
             </div>
         </div>
     </div>
+
+    @if($showCompletionNoteModal)
+        <div class="tsm-note-overlay" wire:click.self="closeCompletionNote">
+            <section class="tsm-note-modal" role="dialog" aria-modal="true">
+                <button type="button" class="tsm-note-close" wire:click="closeCompletionNote" aria-label="Close">×</button>
+                <h3>Completion Note</h3>
+                <p class="tsm-note-task">{{ $completionNoteTaskTitle }}</p>
+                <p class="tsm-note-text">{{ $completionNote }}</p>
+                <button type="button" class="tsm-note-done" wire:click="closeCompletionNote">Close</button>
+            </section>
+        </div>
+    @endif
 
     <style>
         .tsm-controls {
@@ -188,8 +205,8 @@
             font-size: 12px;
             font-weight: 600;
             text-align: left;
-            cursor: pointer;
         }
+        .tsm-task-main { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: flex; font: inherit; gap: 10px; min-width: 0; padding: 0; text-align: left; width: 100%; }
         .tsm-task span {
             min-width: 0;
             overflow: hidden;
@@ -209,6 +226,8 @@
             font-weight: 700;
             white-space: nowrap;
         }
+        .tsm-read-note { background: #2563eb; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-size: 10px; font-weight: 700; padding: 3px 7px; white-space: nowrap; }
+        .tsm-read-note:hover { background: #1d4ed8; }
         .tsm-task:hover {
             filter: brightness(.98);
         }
@@ -216,5 +235,12 @@
         .tsm-task-in_progress { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
         .tsm-task-pending { background: #fffdf5; border-color: #fef3c7; color: #92400e; }
         .tsm-task-unresolved { background: #fff7f7; border-color: #fecaca; color: #b91c1c; }
+        .tsm-note-overlay { align-items: center; background: rgba(15, 23, 42, .45); display: flex; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 100; }
+        .tsm-note-modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 45px rgba(15, 23, 42, .25); max-width: 440px; padding: 24px; position: relative; width: 100%; }
+        .tsm-note-modal h3 { color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; }
+        .tsm-note-task { color: #64748b; font-size: 13px; font-weight: 600; margin: 4px 0 16px; }
+        .tsm-note-text { background: #f8fafc; border-radius: 8px; color: #334155; line-height: 1.6; margin: 0; padding: 12px; white-space: pre-wrap; }
+        .tsm-note-close { background: transparent; border: 0; color: #94a3b8; cursor: pointer; font-size: 24px; position: absolute; right: 13px; top: 9px; }
+        .tsm-note-done { background: #2563eb; border: 0; border-radius: 7px; color: #fff; cursor: pointer; font-size: 12px; font-weight: 700; margin-top: 16px; padding: 8px 14px; }
     </style>
 </x-filament-widgets::widget>

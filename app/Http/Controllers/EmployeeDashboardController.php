@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Task;
 use App\Models\UserActivity;
+use App\Models\Project;
 
 class EmployeeDashboardController extends Controller
 {
@@ -106,6 +107,11 @@ class EmployeeDashboardController extends Controller
             ->whereNull('end_time')
             ->first();
 
+        $projects = Project::query()
+            ->orderByRaw("name = 'BPOVO' DESC")
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('employee.dashboard', compact(
             'user', 
             'totalTasks', 
@@ -116,7 +122,8 @@ class EmployeeDashboardController extends Controller
             'tasks', 
             'upcomingDeadlines', 
             'recentActivity',
-            'activeTimer'
+            'activeTimer',
+            'projects'
         ));
     }
     public function allTasks()
