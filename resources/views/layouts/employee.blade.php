@@ -55,7 +55,6 @@
             <div class="flex items-center justify-center">
                 <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-15 w-auto object-contain">
             </div>
-            <h2 class="font-bold text-base text-slate-800 tracking-tight leading-tight">Performance<br>Management</h2>
         </div>
         <div class="flex items-center gap-3">
             <div class="relative">
@@ -90,9 +89,8 @@
        <!-- Logo (Desktop) with Image -->
        <div class="hidden md:flex items-center gap-3 px-6 py-8">
            <div class="flex items-center justify-center">
-               <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-16 w-auto object-contain">
+               <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-20 w-auto object-contain">
            </div>
-           <h1 class="font-bold text-xl text-slate-800 tracking-tight leading-tight">Performance<br>Management</h1>
        </div>
 
         <!-- Navigation Menu -->
@@ -102,9 +100,6 @@
                 Dashboard
             </a>
             
-            <div class="pt-4 pb-2 px-4">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tasks</p>
-            </div>
             <a href="{{ route('employee.tasks.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all-fast {{ request()->routeIs('employee.tasks.index') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600' }}">
                 <i class="ph ph-check-square text-xl"></i>
                 All Tasks
@@ -117,10 +112,11 @@
                 <i class="ph ph-list-checks text-xl"></i>
                 Activities
             </a>
+            <a href="{{ route('employee.daily-report.create') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all-fast {{ request()->routeIs('employee.daily-report.*') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600' }}">
+                <i class="ph ph-note-pencil text-xl"></i>
+                Daily Report
+            </a>
 
-            <div class="pt-4 pb-2 px-4">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Account</p>
-            </div>
             <a href="{{ route('employee.profile') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all-fast {{ request()->routeIs('employee.profile') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600' }}">
                 <i class="ph ph-user text-xl"></i>
                 Profile
@@ -251,6 +247,47 @@
             document.addEventListener('click', () => notificationPanels.forEach((panel) => panel.classList.add('hidden')));
             refreshNotifications();
             window.setInterval(refreshNotifications, 15000);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const showMessage = (message, isError = false) => {
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.className = `fixed right-4 top-4 z-[100] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${isError ? 'bg-rose-600' : 'bg-emerald-600'}`;
+                document.body.appendChild(toast);
+                window.setTimeout(() => toast.remove(), 3500);
+            };
+            window.addEventListener('employee-toast', (event) => showMessage(event.detail.message, event.detail.isError));
+
+            document.querySelectorAll('[data-async-form]').forEach((form) => form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (form.hasAttribute('data-require-report-entry')) {
+                    const hasEntry = Array.from(new FormData(form).entries()).some(([name, value]) => name.startsWith('entries[') && String(value).trim() !== '');
+                    if (!hasEntry) {
+                        showMessage('Please add at least one task, description, or project before saving the daily report.', true);
+                        return;
+                    }
+                }
+                const button = form.querySelector('[data-submit-button]');
+                const label = button?.querySelector('[data-submit-label]');
+                const originalLabel = label?.textContent;
+                if (button?.disabled) return;
+                if (button) button.disabled = true;
+                if (label) label.textContent = button.dataset.loadingText || 'Saving...';
+
+                try {
+                    const response = await fetch(form.action, { method: form.method, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(form) });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(Object.values(data.errors || {})[0]?.[0] || data.message || 'Unable to save changes.');
+                    if (form.hasAttribute('data-reset-on-success')) form.reset();
+                    showMessage(data.message || 'Saved successfully.');
+                } catch (error) {
+                    showMessage(error.message || 'Unable to save changes.', true);
+                } finally {
+                    if (button) button.disabled = false;
+                    if (label) label.textContent = originalLabel;
+                }
+            }));
         });
     </script>
 </body>

@@ -1,7 +1,7 @@
 @extends('layouts.employee')
 
 @section('content')
-<div class="flex-1 overflow-y-auto bg-[#FAFAFB] p-6 lg:p-8">
+<div class="flex-1 overflow-y-auto bg-[#FAFAFB] p-4 sm:p-6 lg:p-8">
     
     <!-- Top Bar (Desktop) -->
     <div class="hidden md:flex justify-between items-center mb-8">
@@ -41,18 +41,18 @@
     </div>
 
     <!-- Profile Details -->
-    <div class="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-8 py-6 border-b border-slate-200 bg-slate-50/50">
+    <div class="mx-auto w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-5 py-5 sm:px-8 sm:py-6 border-b border-slate-200 bg-slate-50/50">
             <h3 class="font-bold text-slate-800 text-lg">Personal Information</h3>
             <p class="text-sm text-slate-500 mt-1">Your account details (Read-only)</p>
         </div>
         
-        <div class="p-8">
-            <div class="flex flex-col md:flex-row gap-8 items-start">
+        <div class="p-5 sm:p-8">
+            <div class="flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-start">
                 
                 <!-- Avatar -->
-                <div class="shrink-0 flex flex-col items-center">
-                    <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=6366f1&color=fff' }}" class="w-32 h-32 rounded-full border-4 border-indigo-50 shadow-md object-cover">
+                <div class="shrink-0 flex flex-col items-center w-full md:w-auto">
+                    <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=6366f1&color=fff' }}" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-indigo-50 shadow-md object-cover">
                     <span class="mt-4 px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full uppercase tracking-wider">{{ $user->role ?? 'Employee' }}</span>
                 </div>
                 
@@ -61,14 +61,14 @@
                     
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Full Name</label>
-                        <div class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed">
+                        <div class="break-words px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed">
                             {{ $user->name }}
                         </div>
                     </div>
                     
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Email Address</label>
-                        <div class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed">
+                        <div class="break-words px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed">
                             {{ $user->email }}
                         </div>
                     </div>

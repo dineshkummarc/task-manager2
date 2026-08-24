@@ -62,7 +62,7 @@
                             <i class="ph ph-phone text-slate-400 mt-0.5"></i>
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase">Phone</p>
-                                <p class="text-sm font-medium text-slate-700">{{ $user->email ?? 'abc@gmail.com' }}</p>
+                                <p class="text-sm font-medium text-slate-700">{{ $user->phone ?? 'abc@gmail.com' }}</p>
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-100">
@@ -83,19 +83,25 @@
     <!-- Welcome Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2 -mt-20">
                 Welcome back, {{ explode(' ', trim($user->name))[0] }}! 👋
             </h2>
             <p class="text-sm text-slate-500 mt-1">Here's what's happening with your tasks today.</p>
         </div>
-        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700">
-            {{ now()->format('M d, Y') }}
-            <i class="ph ph-calendar-blank text-lg text-slate-400"></i>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('employee.daily-report.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                <i class="ph ph-note-pencil text-lg"></i>
+                Daily Report
+            </a>
+            <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700">
+                {{ now()->format('M d, Y') }}
+                <i class="ph ph-calendar-blank text-lg text-slate-400"></i>
+            </div>
         </div>
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 -mt-6">
         <!-- Pending Tasks -->
         <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
             <div class="absolute bottom-0 left-0 w-full h-1 bg-indigo-500 rounded-b-2xl"></div>
@@ -150,7 +156,7 @@
             </h3>
         </div>
         <div class="p-5 md:p-6">
-            <form action="{{ route('employee.tasks.store') }}" method="POST">
+            <form action="{{ route('employee.tasks.store') }}" method="POST" data-async-form data-reset-on-success>
                 @csrf
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                     <div>
@@ -176,8 +182,8 @@
                     <textarea name="description" rows="3" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400" placeholder="Briefly describe what needs to be done..."></textarea>
                 </div>
                 <div class="flex justify-end">
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2">
-                        Save Task
+                    <button type="submit" data-submit-button data-loading-text="Saving..." class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2">
+                        <span data-submit-label>Save Task</span>
                         <i class="ph ph-paper-plane-right"></i>
                     </button>
                 </div>
@@ -252,7 +258,7 @@
                                 @csrf
                                 <input type="hidden" name="block_reason" value="">
                                 <input type="hidden" name="completion_note" value="">
-                                <select name="status" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" onchange="if (this.value === 'blockage') { const reason = prompt('Enter reason for unresolved task:'); if (!reason) { this.value = '{{ $task->is_blocked ? 'blockage' : $task->status }}'; return; } this.form.querySelector('[name=block_reason]').value = reason; } if (this.value === 'completed') { const note = prompt('Add a completion note (optional):', '{{ addslashes($task->completion_note ?? '') }}'); if (note === null) { this.value = '{{ $task->is_blocked ? 'blockage' : $task->status }}'; return; } this.form.querySelector('[name=completion_note]').value = note; } this.form.submit();">
+                                <select name="status" data-task-status-select data-original-status="{{ $task->is_blocked ? 'blockage' : $task->status }}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                                     <option value="pending" @selected($task->status === 'pending' && ! $task->is_blocked)>Pending</option>
                                     <option value="in_progress" @selected($task->status === 'in_progress' && ! $task->is_blocked)>In Progress</option>
                                     <option value="blockage" @selected($task->is_blocked)>Unresolved</option>
@@ -291,6 +297,15 @@
             </div>
         </div>
         @endif
+    </div>
+
+    <div id="task-status-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="mb-5 flex items-start justify-between gap-4"><div><h3 id="task-status-modal-title" class="text-lg font-bold text-slate-800">Update task</h3><p id="task-status-modal-help" class="mt-1 text-sm text-slate-500"></p></div><button type="button" data-status-modal-cancel class="text-2xl leading-none text-slate-400 hover:text-slate-600">×</button></div>
+            <textarea id="task-status-modal-input" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="Write a note..."></textarea>
+            <p id="task-status-modal-error" class="mt-2 hidden text-xs font-medium text-rose-600"></p>
+            <div class="mt-5 flex justify-end gap-3"><button type="button" data-status-modal-cancel class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button><button type="button" id="task-status-modal-save" class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Save status</button></div>
+        </div>
     </div>
 
     <!-- Bottom Sections Grid -->
@@ -405,6 +420,36 @@
             if (count) {
                 count.textContent = `Showing ${visibleRows} of ${rows.length} tasks`;
             }
+        });
+
+        const modal = document.getElementById('task-status-modal');
+        const modalInput = document.getElementById('task-status-modal-input');
+        const modalTitle = document.getElementById('task-status-modal-title');
+        const modalHelp = document.getElementById('task-status-modal-help');
+        const modalError = document.getElementById('task-status-modal-error');
+        let selectedStatusControl = null;
+
+        const closeStatusModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); selectedStatusControl = null; };
+        document.querySelectorAll('[data-status-modal-cancel]').forEach((button) => button.addEventListener('click', () => {
+            if (selectedStatusControl) selectedStatusControl.value = selectedStatusControl.dataset.originalStatus;
+            closeStatusModal();
+        }));
+        document.querySelectorAll('[data-task-status-select]').forEach((select) => select.addEventListener('change', () => {
+            if (!['completed', 'blockage'].includes(select.value)) { select.form.submit(); return; }
+            selectedStatusControl = select;
+            const isBlocked = select.value === 'blockage';
+            modalTitle.textContent = isBlocked ? 'Mark task as unresolved' : 'Mark task as completed';
+            modalHelp.textContent = isBlocked ? 'Please explain what is blocking this task.' : 'Add a completion note (optional).';
+            modalInput.placeholder = isBlocked ? 'Describe the issue or blocker...' : 'What was completed?';
+            modalInput.value = isBlocked ? select.form.querySelector('[name=block_reason]').value : select.form.querySelector('[name=completion_note]').value;
+            modalError.classList.add('hidden'); modal.classList.remove('hidden'); modal.classList.add('flex'); modalInput.focus();
+        }));
+        document.getElementById('task-status-modal-save')?.addEventListener('click', () => {
+            if (!selectedStatusControl) return;
+            const isBlocked = selectedStatusControl.value === 'blockage';
+            if (isBlocked && !modalInput.value.trim()) { modalError.textContent = 'Please enter the reason for this unresolved task.'; modalError.classList.remove('hidden'); return; }
+            selectedStatusControl.form.querySelector(isBlocked ? '[name=block_reason]' : '[name=completion_note]').value = modalInput.value.trim();
+            selectedStatusControl.form.submit();
         });
     });
 </script>

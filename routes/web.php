@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DailyReportController;
+use App\Http\Controllers\DailyReportExportController;
 use App\Http\Controllers\EmployeeAuthController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeTaskController;
@@ -26,6 +28,8 @@ Route::get('/employee', function () {
 // employee-only middleware below, otherwise admins and managers receive 403.
 Route::middleware('auth')->get('/admin/task-history/pdf', [UserTaskHistoryExportController::class, 'pdf'])
     ->name('user-task-history.pdf');
+Route::middleware('auth')->get('/admin/daily-reports/pdf', [DailyReportExportController::class, 'pdf'])
+    ->name('daily-reports.pdf');
 
 Route::middleware(['auth', 'employee'])->group(function () {
     Route::get('/employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
@@ -36,6 +40,8 @@ Route::middleware(['auth', 'employee'])->group(function () {
     Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');
     Route::get('/employee/notifications', [EmployeeDashboardController::class, 'notifications'])->name('employee.notifications');
     Route::post('/employee/notifications/read', [EmployeeDashboardController::class, 'markNotificationsRead'])->name('employee.notifications.read');
+    Route::get('/employee/daily-report', [DailyReportController::class, 'create'])->name('employee.daily-report.create');
+    Route::post('/employee/daily-report', [DailyReportController::class, 'store'])->name('employee.daily-report.store');
 
     Route::post('/employee/logout', [EmployeeAuthController::class, 'logout'])->name('employee.logout');
 

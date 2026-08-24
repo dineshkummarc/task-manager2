@@ -71,7 +71,7 @@
                             @elseif($task->status === 'pending')
                                 <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">Pending</span>
                             @elseif($task->status === 'in_progress')
-                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-100 text-indigo-700">In Progress</span>
+                                <span class="text-xs font-semibold text-indigo-600">In Progress</span>
                             @endif
                         </td>
                         <td class="px-6 py-4">

@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Task;
-use App\Models\TimeLog;
 use App\Models\UserActivity;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EmployeeTaskController extends Controller
@@ -38,8 +37,12 @@ class EmployeeTaskController extends Controller
         UserActivity::create([
             'user_id' => $user->id,
             'action' => 'created task',
-            'description' => 'Created a new task: ' . $task->title,
+            'description' => 'Created a new task: '.$task->title,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Task created successfully.']);
+        }
 
         return back()->with('success', 'Task created successfully.');
     }
@@ -61,7 +64,7 @@ class EmployeeTaskController extends Controller
 
         $newStatus = $request->status;
         $isBlocked = $newStatus === 'blockage';
-        
+
         $task->update([
             'status' => $newStatus,
             'is_blocked' => $isBlocked,
@@ -72,11 +75,11 @@ class EmployeeTaskController extends Controller
         UserActivity::create([
             'user_id' => $user->id,
             'action' => 'updated status',
-            'description' => 'Updated task "' . $task->title . '" status to ' . $newStatus
-                . ($isBlocked && $request->block_reason ? ' (Reason: ' . $request->block_reason . ')' : '')
-                . ($newStatus === 'completed' && $request->completion_note ? ' (Completion note added)' : ''),
+            'description' => 'Updated task "'.$task->title.'" status to '.$newStatus
+                .($isBlocked && $request->block_reason ? ' (Reason: '.$request->block_reason.')' : '')
+                .($newStatus === 'completed' && $request->completion_note ? ' (Completion note added)' : ''),
         ]);
 
-        return back()->with('success', 'Task status updated to ' . ucfirst($newStatus) . '.');
+        return back()->with('success', 'Task status updated to '.ucfirst($newStatus).'.');
     }
 }

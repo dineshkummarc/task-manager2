@@ -259,6 +259,7 @@
         }
 
         .th-report-title { margin: 0; padding: 14px 18px 10px; font-size: 14px; font-weight: 700; line-height: 1.35; color: #111827; }
+        .th-report-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .th-report-table { width: 100%; border-collapse: collapse; }
         
         /* Table text sizes increased slightly here */
@@ -334,14 +335,15 @@
             .th-filters .th-btn-excel,
             .th-filters .th-btn-pdf { width: 100%; box-sizing: border-box; }
 
-            .th-card { width: 100%; border-radius: 12px; overflow-x: auto; }
-            .th-report-table th, .th-report-table td { padding: 10px; font-size: 11px; }
-            
-            .th-report-estimate { display: none; }
-            .th-report-description { display: table-cell; font-size: 11px; color: #475569; max-width: 130px; word-break: break-word; }
-
-            .th-report-employee { width: 80px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
-            .th-report-completed { width: 75px; font-size: 11px; }
+            .th-card { width: 100%; border-radius: 12px; overflow: hidden; }
+            .th-report-scroll { width: 100%; }
+            /* Keep every column readable and let the user scroll sideways instead of squeezing text into letters. */
+            .th-report-table { min-width: 880px; }
+            .th-report-table th, .th-report-table td { padding: 10px 12px; font-size: 12px; }
+            .th-report-estimate { display: table-cell; }
+            .th-report-description { display: table-cell; min-width: 280px; max-width: 360px; word-break: normal; }
+            .th-report-employee { width: 145px; overflow: visible; text-overflow: clip; font-size: 12px; }
+            .th-report-completed { width: 120px; font-size: 12px; }
 
             .th-grid, .th-grid thead, .th-grid tbody, .th-grid tr, .th-grid td, .th-grid th {
                 display: block;
@@ -448,6 +450,7 @@
                 @endphp
                 <h3 class="th-report-title">{{ match ($this->period) { 'weekly' => 'Last Week Completed Tasks', 'monthly' => 'Monthly Completed Tasks', 'overall' => 'Overall Completed Tasks', default => "Today's Completed Tasks" } }}</h3>
                 @php $tasksByEmployee = $reportTasks->groupBy(fn ($row) => $row['user']->id); @endphp
+                <div class="th-report-scroll">
                 <table class="th-report-table">
                     <thead>
                         <tr>
@@ -488,6 +491,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             @else
                 <div class="th-empty">
                     <x-filament::icon icon="heroicon-o-inbox" class="h-10 w-10 mx-auto mb-3" style="color:#E5E7EB;" />

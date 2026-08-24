@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
@@ -12,7 +13,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $guarded = [];
 
@@ -88,10 +89,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(DailyPerformance::class);
     }
 
+    public function dailyReportEntries(): HasMany
+    {
+        return $this->hasMany(DailyReportEntry::class);
+    }
+
     public function activities(): HasMany
     {
         return $this->hasMany(UserActivity::class);
     }
+
     public function jobResponsibility()
     {
         return $this->belongsTo(JobResponsibility::class);
@@ -113,7 +120,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         $totalAssigned = (clone $baseQuery)->count();
-        
+
         $overdueCount = (clone $baseQuery)
             ->where('status', '!=', 'completed')
             ->whereNotNull('due_date')
@@ -137,6 +144,7 @@ class User extends Authenticatable implements FilamentUser
             if ($overdueCount > 0) {
                 return max(0.0, 100.0 - ($overdueCount * 25));
             }
+
             // Agar task in-progress ya pending hai aur overdue nahi hai, toh starting 100%
             return 100.0;
         }
