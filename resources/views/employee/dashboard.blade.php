@@ -62,7 +62,7 @@
                             <i class="ph ph-phone text-slate-400 mt-0.5"></i>
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase">Phone</p>
-                                <p class="text-sm font-medium text-slate-700">{{ $user->phone ?? 'abc@gmail.com' }}</p>
+                                <p class="text-sm font-medium text-slate-700">{{ $user->phone ?? '+92302...' }}</p>
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-100">
@@ -309,17 +309,17 @@
     </div>
 
     <!-- Bottom Sections Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+    <div class="pb-6">
         
         <!-- Recent Activity -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div class="w-full bg-white rounded-2xl border border-slate-100 shadow-sm">
             <div class="p-5 md:p-6 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">Recent Activity</h3>
                 <a href="{{ route('employee.activities') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View All</a>
             </div>
-            <div class="p-5 md:p-6 space-y-6">
+            <div class="p-4 sm:p-5 md:p-6 space-y-5">
                 @forelse($recentActivity as $activity)
-                <div class="flex gap-4">
+                <div class="flex gap-3 sm:gap-4">
                     <div class="relative mt-1">
                         <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center z-10 relative">
                             <i class="ph-fill ph-check-circle text-lg"></i>
@@ -328,69 +328,14 @@
                         <div class="absolute top-8 left-1/2 -translate-x-1/2 w-px h-10 bg-slate-200"></div>
                         @endif
                     </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-800">{{ $activity->description ?? ($activity->action . ' task') }}</p>
+                    <div class="min-w-0">
+                        <p class="break-words text-sm font-medium text-slate-800">{{ $activity->description ?? ($activity->action . ' task') }}</p>
                         <p class="text-xs text-slate-500 mt-1">{{ $activity->created_at->diffForHumans() }}</p>
                     </div>
                 </div>
                 @empty
                 <div class="text-center py-4 text-slate-500 text-sm">
                     No recent activity to show.
-                </div>
-                @endforelse
-                
-                <!-- Mock Activity for UI visualization if DB is empty -->
-                @if($recentActivity->isEmpty())
-                <div class="flex gap-4">
-                    <div class="relative mt-1">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center z-10 relative">
-                            <i class="ph-fill ph-play-circle text-lg"></i>
-                        </div>
-                        <div class="absolute top-8 left-1/2 -translate-x-1/2 w-px h-10 bg-slate-200"></div>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-800">You started working on '<span class="font-bold">Fix Dashboard Bug</span>'</p>
-                        <p class="text-xs text-slate-500 mt-1">3 hours ago</p>
-                    </div>
-                </div>
-                <div class="flex gap-4">
-                    <div class="relative mt-1">
-                        <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center z-10 relative">
-                            <i class="ph-fill ph-file-text text-lg"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-800">New task '<span class="font-bold">API Integration</span>' assigned to you</p>
-                        <p class="text-xs text-slate-500 mt-1">1 day ago</p>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Upcoming Deadlines -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <div class="p-5 md:p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800">Upcoming Deadlines</h3>
-                <a href="#" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View Calendar</a>
-            </div>
-            <div class="p-5 md:p-6 space-y-4">
-                @forelse($upcomingDeadlines as $deadline)
-                <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
-                        <i class="ph ph-calendar-blank text-xl"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-slate-800 truncate">{{ $deadline->title }}</p>
-                        <p class="text-xs text-slate-500 mt-0.5">{{ \Carbon\Carbon::parse($deadline->due_date)->format('M d, Y') }}</p>
-                    </div>
-                    <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-rose-50 text-rose-600 uppercase tracking-wide">
-                        Urgent
-                    </span>
-                </div>
-                @empty
-                <div class="text-center py-4 text-slate-500 text-sm">
-                    No upcoming deadlines.
                 </div>
                 @endforelse
             </div>

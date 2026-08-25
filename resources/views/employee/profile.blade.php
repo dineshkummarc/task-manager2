@@ -74,6 +74,13 @@
                     </div>
 
                     <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phone Number</label>
+                        <div class="break-words px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed">
+                            {{ $user->phone ?? '+92302...' }}
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
                         <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Department</label>
                         <div class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium cursor-not-allowed flex items-center gap-2">
                             <i class="ph ph-buildings text-slate-400 text-lg"></i>

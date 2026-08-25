@@ -2,7 +2,7 @@
     <div x-data="{ isFullscreen: false, zoomLevel: 100 }" class="rounded-xl bg-white transition-all flex flex-col" :class="isFullscreen ? 'fixed inset-4 z-50 shadow-2xl h-[calc(100vh-2rem)]' : ''" style="border:1px solid #e2e8f0;">
         
         <!-- Header: Ek hi line mein sab kuch rakhne ke liye flex-nowrap aur overflow-x-auto -->
-        <div class="flex items-center justify-between gap-3 px-5 py-4 flex-nowrap overflow-x-auto" style="border-bottom:1px solid #e2e8f0;">
+        <div class="tsm-header flex items-center justify-between gap-3 px-5 py-4" style="border-bottom:1px solid #e2e8f0;">
             
             <!-- Left Side: Title, Zoom & Fullscreen -->
             <div class="flex items-center gap-2 shrink-0">
@@ -72,6 +72,9 @@
                                     @if($status === 'completed' && filled($item['completion_note']))
                                         <button type="button" class="tsm-read-note" wire:click="openCompletionNote({{ $item['id'] }})">Read Note</button>
                                     @endif
+                                    @if($status === 'unresolved' && filled($item['blockage_text']))
+                                        <button type="button" class="tsm-read-note" wire:click="openBlockageNote({{ $item['id'] }})">Read Note</button>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -85,7 +88,7 @@
         <div class="tsm-note-overlay" wire:click.self="closeCompletionNote">
             <section class="tsm-note-modal" role="dialog" aria-modal="true">
                 <button type="button" class="tsm-note-close" wire:click="closeCompletionNote" aria-label="Close">×</button>
-                <h3>Completion Note</h3>
+                <h3>{{ $noteHeading }}</h3>
                 <p class="tsm-note-task">{{ $completionNoteTaskTitle }}</p>
                 <p class="tsm-note-text">{{ $completionNote }}</p>
                 <button type="button" class="tsm-note-done" wire:click="closeCompletionNote">Close</button>
@@ -96,7 +99,7 @@
     <style>
         .tsm-controls {
             display: flex;
-            flex-wrap: nowrap; /* Wrap hone se roka gaya hai taake aik line mein rahein */
+            flex-wrap: nowrap;
             align-items: center;
             gap: 0.6rem;
         }
@@ -242,5 +245,42 @@
         .tsm-note-text { background: #f8fafc; border-radius: 8px; color: #334155; line-height: 1.6; margin: 0; padding: 12px; white-space: pre-wrap; }
         .tsm-note-close { background: transparent; border: 0; color: #94a3b8; cursor: pointer; font-size: 24px; position: absolute; right: 13px; top: 9px; }
         .tsm-note-done { background: #2563eb; border: 0; border-radius: 7px; color: #fff; cursor: pointer; font-size: 12px; font-weight: 700; margin-top: 16px; padding: 8px 14px; }
+
+        @media (max-width: 640px) {
+            .tsm-header {
+                align-items: stretch;
+                flex-direction: column;
+                padding: .75rem;
+            }
+            .tsm-header > div:first-child {
+                justify-content: space-between;
+            }
+            .tsm-controls {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: .5rem;
+                width: 100%;
+            }
+            .tsm-controls > div:first-child,
+            .tsm-controls .tsm-field:last-child {
+                grid-column: 1 / -1;
+            }
+            .tsm-controls > div:first-child {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .tsm-controls > div:first-child button {
+                padding-inline: .35rem;
+            }
+            .tsm-field {
+                min-width: 0;
+            }
+            .tsm-field input,
+            .tsm-select {
+                box-sizing: border-box;
+                min-width: 0;
+                width: 100%;
+            }
+        }
     </style>
 </x-filament-widgets::widget>

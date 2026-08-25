@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\DailyReportEntry;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,13 +70,33 @@ class DailyReports extends Page
 
     public function getUsers(): Collection
     {
-        return User::query()->when($this->selectedUserId !== '', fn (Builder $q) => $q->whereKey($this->selectedUserId))
-            ->whereHas('dailyReportEntries', fn (Builder $q) => $this->applyFilters($q))->orderBy('name')->get(['id', 'name', 'email']);
+        return User::query()
+            ->where(function (Builder $query) {
+                $query->whereIn('role', ['employee', 'manager'])
+                    ->orWhereHas('roles', fn (Builder $roles) => $roles->whereIn('name', ['employee', 'manager']));
+            })
+            ->when($this->selectedUserId !== '', fn (Builder $query) => $query->whereKey($this->selectedUserId))
+            ->when($this->selectedProjectId !== '', fn (Builder $query) => $query->where('project_id', $this->selectedProjectId))
+            ->withCount([
+                'dailyReportEntries as report_entries_count' => fn (Builder $query) => $this->applyFilters($query),
+                'assignedTasks as completed_tasks_count' => fn (Builder $query) => $query
+                    ->where('status', 'completed')
+                    ->when($this->selectedDate !== '', fn (Builder $query) => $query->whereDate('updated_at', $this->selectedDate))
+                    ->when($this->selectedProjectId !== '', fn (Builder $query) => $query->where('project_id', $this->selectedProjectId)),
+            ])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
     }
 
     public function getAllEmployees(): Collection
     {
-        return User::query()->orderBy('name')->get(['id', 'name']);
+        return User::query()
+            ->where(function (Builder $query) {
+                $query->whereIn('role', ['employee', 'manager'])
+                    ->orWhereHas('roles', fn (Builder $roles) => $roles->whereIn('name', ['employee', 'manager']));
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     public function getProjects(): Collection
@@ -85,7 +106,35 @@ class DailyReports extends Page
 
     public function getUserEntries(int $userId): Collection
     {
-        return $this->applyFilters(DailyReportEntry::query()->with('project')->where('user_id', $userId))->orderByDesc('report_date')->orderBy('slot_start')->get();
+        $entries = $this->applyFilters(
+            DailyReportEntry::query()->with('project')->where('user_id', $userId)
+        )->orderByDesc('report_date')->orderBy('slot_start')->get();
+
+        if ($entries->isNotEmpty()) {
+            return $entries;
+        }
+
+        return Task::query()
+            ->with('project')
+            ->where(function (Builder $query) use ($userId) {
+                $query->where('assigned_to', $userId)
+                    ->orWhere('user_id', $userId);
+            })
+            ->where('status', 'completed')
+            ->when($this->selectedDate !== '', fn (Builder $query) => $query->whereDate('updated_at', $this->selectedDate))
+            ->when($this->selectedProjectId !== '', fn (Builder $query) => $query->where('project_id', $this->selectedProjectId))
+            ->latest('updated_at')
+            ->get()
+            ->map(function (Task $task) {
+                $completedAt = $task->updated_at?->timezone('Asia/Karachi');
+
+                return (object) [
+                    'slot_label' => $completedAt ? 'Completed at '.$completedAt->format('g:i A') : 'Completed task',
+                    'task_title' => $task->title,
+                    'description' => $task->description,
+                    'project' => $task->project,
+                ];
+            });
     }
 
     public function exportExcel(): BinaryFileResponse

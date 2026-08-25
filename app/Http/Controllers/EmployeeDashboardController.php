@@ -80,21 +80,9 @@ class EmployeeDashboardController extends Controller
             })
             ->with('creator');
             
-        $tasks = $tasksQuery->orderByRaw("CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, due_date ASC")
+        $tasks = $tasksQuery->latest('created_at')
             ->paginate(6)
             ->withQueryString();
-
-        // Upcoming Deadlines (Next 5 pending tasks)
-        $upcomingDeadlines = Task::where(function($q) use ($user) {
-                $q->where('assigned_to', $user->id)
-                  ->orWhere('user_id', $user->id);
-            })
-            ->where('status', '!=', 'completed')
-            ->whereNotNull('due_date')
-            ->where('due_date', '>=', now())
-            ->orderBy('due_date', 'asc')
-            ->take(5)
-            ->get();
 
         // Recent Activity (Real data from user_activities)
         $recentActivity = \App\Models\UserActivity::where('user_id', $user->id)
@@ -120,7 +108,6 @@ class EmployeeDashboardController extends Controller
             'completedTasks', 
             'overdueTasks', 
             'tasks', 
-            'upcomingDeadlines', 
             'recentActivity',
             'activeTimer',
             'projects'

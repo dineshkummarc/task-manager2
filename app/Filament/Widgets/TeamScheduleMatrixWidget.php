@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Pages\UserTaskHistory;
 use App\Models\Task;
 use App\Models\TimeLog;
 use App\Models\User;
@@ -15,7 +16,7 @@ class TeamScheduleMatrixWidget extends Widget
 
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static bool $isLazy = false;
 
@@ -42,6 +43,8 @@ class TeamScheduleMatrixWidget extends Widget
     public string $completionNoteTaskTitle = '';
 
     public string $completionNote = '';
+
+    public string $noteHeading = 'Completion Note';
 
     public function mount(): void
     {
@@ -79,7 +82,7 @@ class TeamScheduleMatrixWidget extends Widget
 
     public function viewUserReport(int $userId)
     {
-        if (! \App\Filament\Pages\UserTaskHistory::canAccess()) {
+        if (! UserTaskHistory::canAccess()) {
             return null;
         }
 
@@ -89,7 +92,7 @@ class TeamScheduleMatrixWidget extends Widget
             default => 'today',
         };
 
-        return redirect(\App\Filament\Pages\UserTaskHistory::getUrl().'?user='.$userId.'&period='.$period);
+        return redirect(UserTaskHistory::getUrl().'?user='.$userId.'&period='.$period);
     }
 
     public function openTaskHistory(int $userId): void
@@ -144,6 +147,20 @@ class TeamScheduleMatrixWidget extends Widget
 
         $this->completionNoteTaskTitle = $task->title;
         $this->completionNote = $task->completion_note;
+        $this->noteHeading = 'Completion Note';
+        $this->showCompletionNoteModal = true;
+    }
+
+    public function openBlockageNote(int $taskId): void
+    {
+        $task = Task::query()->findOrFail($taskId);
+        $blockageText = $this->blockageText($task);
+
+        abort_unless($this->statusColumnKey($task) === 'blockage' && filled($blockageText), 404);
+
+        $this->completionNoteTaskTitle = $task->title;
+        $this->completionNote = $blockageText;
+        $this->noteHeading = 'Unresolved Note';
         $this->showCompletionNoteModal = true;
     }
 
@@ -152,6 +169,7 @@ class TeamScheduleMatrixWidget extends Widget
         $this->showCompletionNoteModal = false;
         $this->completionNoteTaskTitle = '';
         $this->completionNote = '';
+        $this->noteHeading = 'Completion Note';
     }
 
     protected function getViewData(): array
@@ -178,11 +196,11 @@ class TeamScheduleMatrixWidget extends Widget
             return collect($items)
                 ->unique('id')
                 ->filter(function (array $item): bool {
-                if ($item['is_break']) {
-                    return false;
-                }
+                    if ($item['is_break']) {
+                        return false;
+                    }
 
-                $status = $item['status'] === 'blockage' ? 'unresolved' : $item['status'];
+                    $status = $item['status'] === 'blockage' ? 'unresolved' : $item['status'];
 
                     return $this->selectedStatus === 'all' || $status === $this->selectedStatus;
                 })
@@ -225,7 +243,7 @@ class TeamScheduleMatrixWidget extends Widget
             'monthly' => 'Monthly Task Schedule',
             default => $anchor->isToday()
                 ? "Today's Task Schedule"
-                : $anchor->format('M j, Y') . ' Task Schedule',
+                : $anchor->format('M j, Y').' Task Schedule',
         };
     }
 
@@ -346,7 +364,7 @@ class TeamScheduleMatrixWidget extends Widget
         $employeeIds = $useStatusColumns
             ? collect([(int) $this->selectedUserId])
             : $employees->pluck('id')->map(fn ($id) => (int) $id);
-            
+
         $from = $rangeStart->toDateString();
         $to = $rangeEnd->toDateString();
         $placements = [];
@@ -413,7 +431,7 @@ class TeamScheduleMatrixWidget extends Widget
             if (! $userId || isset($loggedTaskIds[$task->id][$userId])) {
                 continue;
             }
-            
+
             if ($useStatusColumns && $userId !== (int) $this->selectedUserId) {
                 continue;
             }
@@ -437,6 +455,7 @@ class TeamScheduleMatrixWidget extends Widget
             if ($due->format('H:i:s') !== '00:00:00') {
                 return $this->inAppTz($due);
             }
+
             return $this->inAppTz($due)->setTime(10, 0);
         }
 

@@ -77,7 +77,7 @@
                         @forelse ($users as $employee)
                             @php($isOpen = $expandedUsers[$employee->id] ?? false)
                             @php($entries = $isOpen ? $this->getUserEntries($employee->id) : collect())
-                            @php($entryCount = $isOpen ? $entries->count() : $this->getUserEntries($employee->id)->count())
+                            @php($entryCount = $employee->report_entries_count ?: $employee->completed_tasks_count)
                             <tr wire:click="toggleUser({{ $employee->id }})" style="cursor: pointer">
                                 <td>
                                     <span class="daily-report-user-button">
@@ -93,19 +93,21 @@
                                 <tr class="daily-report-details">
                                     <td colspan="4">
                                         <div class="daily-report-details-inner">
-                                            <p class="daily-report-details-title">{{ $employee->name }}'s Daily Report</p>
+                                            <p class="daily-report-details-title">{{ $employee->name }}'s Daily Report & Completed Tasks</p>
                                             <div class="overflow-x-auto">
                                                 <table class="daily-report-slot-table">
                                                     <thead><tr><th>Time Slot</th><th>Task Title</th><th>Description</th><th>Project</th></tr></thead>
                                                     <tbody>
-                                                        @foreach ($entries as $entry)
+                                                        @forelse ($entries as $entry)
                                                             <tr>
                                                                 <td class="whitespace-nowrap font-semibold">{{ $entry->slot_label }}</td>
                                                                 <td>{{ $entry->task_title ?: '—' }}</td>
                                                                 <td class="max-w-lg whitespace-pre-line">{{ $entry->description ?: '—' }}</td>
                                                                 <td>@if($entry->project)<span class="daily-report-project">{{ $entry->project->name }}</span>@else — @endif</td>
                                                             </tr>
-                                                        @endforeach
+                                                        @empty
+                                                            <tr><td colspan="4" class="text-center text-slate-500">No daily report entries match the selected filters.</td></tr>
+                                                        @endforelse
                                                     </tbody>
                                                 </table>
                                             </div>

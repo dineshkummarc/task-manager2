@@ -123,7 +123,44 @@ class AdminPanelProvider extends PanelProvider
                         .dashboard-stat-gitmit .fi-wi-stats-overview-stat-icon { background: #dbeafe; color: #2563eb !important; }
 
                         @media (max-width: 640px) {
-                            .dashboard-stat-card { min-height: 6.25rem; }
+                            /* Put page actions beside the title instead of below it on phones. */
+                            .fi-header {
+                                align-items: center !important;
+                                flex-direction: row !important;
+                                justify-content: space-between !important;
+                            }
+                            .fi-header > div:last-child {
+                                margin-left: auto;
+                            }
+
+                            /* Hide the welcome sentence under the Dashboard heading on phones. */
+                            .fi-header-subheading {
+                                display: none !important;
+                            }
+
+                            /* Keep the three dashboard summaries together on phone screens. */
+                            .fi-wi-stats-overview .fi-wi-stats-overview-stats-ctn {
+                                display: grid !important;
+                                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                                gap: .45rem !important;
+                            }
+                            .dashboard-stat-card {
+                                min-height: 4rem;
+                                padding: .6rem !important;
+                            }
+                            .dashboard-stat-card .fi-wi-stats-overview-stat-value {
+                                font-size: 1.1rem !important;
+                            }
+                            .dashboard-stat-card .fi-wi-stats-overview-stat-label,
+                            .dashboard-stat-card .fi-wi-stats-overview-stat-description {
+                                font-size: .55rem !important;
+                                line-height: 1.15 !important;
+                            }
+                            .dashboard-stat-card .fi-wi-stats-overview-stat-icon {
+                                height: 1.4rem !important;
+                                padding: .25rem;
+                                width: 1.4rem !important;
+                            }
                         }
                     </style>
                 ')

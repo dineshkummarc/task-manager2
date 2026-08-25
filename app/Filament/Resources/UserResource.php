@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -42,6 +43,7 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('email')
                             ->email()
                             ->required()
+                            ->unique(ignoreRecord: true)
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('phone')
@@ -54,6 +56,8 @@ class UserResource extends Resource
                             ->password()
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $operation): bool => $operation === 'create')
+                            ->rules([Password::min(6)->mixedCase()->numbers()->symbols()])
+                            ->helperText('At least 6 characters, including uppercase, lowercase, number, and symbol.')
                             ->maxLength(255),
 
                         Forms\Components\Select::make('project_id')

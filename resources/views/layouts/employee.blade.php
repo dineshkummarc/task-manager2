@@ -50,10 +50,10 @@
     @endphp
 
     <!-- Mobile Top Header with Image Logo -->
-    <div class="md:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 z-50">
+    <div class="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 z-50">
         <div class="flex items-center gap-3">
             <div class="flex items-center justify-center">
-                <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-15 w-auto object-contain">
+                <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-16 w-auto object-contain">
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -86,12 +86,12 @@
     <!-- Sidebar (Desktop) / Mobile Menu Slide-over -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col h-full overflow-y-auto pt-20 md:pt-0">
         
-       <!-- Logo (Desktop) with Image -->
-       <div class="hidden md:flex items-center gap-3 px-6 py-8">
-           <div class="flex items-center justify-center">
-               <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-20 w-auto object-contain">
-           </div>
-       </div>
+       <!-- Logo (Desktop) with Image - Padding reduced here -->
+       <div class="hidden md:flex items-center gap-3 px-6 py-1">
+    <div class="flex items-center justify-center">
+        <img src="{{ asset('images/bpovo_logo.png') }}" alt="BPOVO Logo" class="h-23 w-auto object-contain">
+    </div>
+</div>
 
         <!-- Navigation Menu -->
         <nav class="flex-1 px-4 space-y-1 mb-8">
@@ -121,23 +121,20 @@
                 <i class="ph ph-user text-xl"></i>
                 Profile
             </a>
-            <a href="{{ route('employee.settings') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all-fast {{ request()->routeIs('employee.settings') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600' }}">
+            {{-- <a href="{{ route('employee.settings') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all-fast {{ request()->routeIs('employee.settings') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600' }}">
                 <i class="ph ph-gear text-xl"></i>
                 Settings
-            </a>
+            </a> --}}
             <div class="p-4 border-t border-slate-100">
-    <form method="POST" action="{{ route('employee.logout') }}">
-        @csrf
-        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all-fast shadow-sm shadow-indigo-100">
-            <i class="ph ph-sign-out text-xl"></i>
-            Logout
-        </button>
-    </form>
-</div>
+                <form method="POST" action="{{ route('employee.logout') }}">
+                    @csrf
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all-fast shadow-sm shadow-indigo-100">
+                        <i class="ph ph-sign-out text-xl"></i>
+                        Logout
+                    </button>
+                </form>
+            </div>
         </nav>
-        
-        <!-- Logout Button at bottom -->
-        
     </aside>
 
     <!-- Overlay for mobile sidebar -->
