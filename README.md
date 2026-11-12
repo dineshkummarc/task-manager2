@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
@@ -130,4 +129,3 @@ Employee Panel: [http://127.0.0.1:8000/employee/login](http://127.0.0.1:8000/emp
 Admin & Managers operate through the secured Filament backend based on assigned permissions.
 
 Employees are strictly restricted to the dedicated employee route and portal, preventing unauthorized access to administrative data.
->>>>>>> b4b239d95ea64e0acb1dbc85dc48d8781b7218c5
